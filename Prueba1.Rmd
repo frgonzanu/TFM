@@ -10,7 +10,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
  
 # Datos
-Los datos son provenientes del estudio con DOI 10.1126/science.aau6509 almacenados en GEO con el ID: GSE97693
+Los datos son provenientes del estudio con DOI 10.1126/science.aau6509 almacenados en GEO con el ID: GSE97693. Los códigos de análisis se pueden ver en [https://github.com/bianshuhui/CRC_code](https://github.com/bianshuhui/CRC_code).
 
 ```{r}
 library(GEOquery)
