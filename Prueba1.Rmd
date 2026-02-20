@@ -14,5 +14,102 @@ Los datos son provenientes del estudio con DOI 10.1126/science.aau6509 almacenad
 
 ```{r}
 library(GEOquery)
+library(dplyr)
 
+data <- getGEO("GSE97693")$GSE97693_series_matrix.txt.gz
+
+(files <- getGEOSeriesFileListing("GSE97693") %>%
+  filter(stringr::str_detect(name, "TPM"))) %>% head
 ```
+
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+base_url <- "https://ftp.ncbi.nlm.nih.gov/geo/series/GSE97000/GSE97693/suppl/"
+
+files <- files %>%
+  mutate(url = paste0(base_url, name))
+
+library(future.apply)
+
+plan(multisession, workers = 6)
+
+future_mapply(
+  FUN = download.file,
+  url = pData(data)$supplementary_file_1,
+  destfile = file.path("GSE97693/TPMs", files$name),
+  MoreArgs = list(mode = "wb")
+)
+```
+
+
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+sub_data <- pData(data) %>%
+  filter(stringr::str_detect(supplementary_file_1, "TPM"))
+
+library(future.apply)
+
+plan(multisession, workers = 6)
+
+future_mapply(
+  FUN = download.file,
+  url = sub_data$supplementary_file_1,
+  destfile = file.path("GSE97693/TPMs", files$name),
+  MoreArgs = list(mode = "wb")
+)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
