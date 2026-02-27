@@ -23,6 +23,34 @@ data <- getGEO("GSE97693")$GSE97693_series_matrix.txt.gz
 
 ```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
 meta <- pData(data)
+meta <- meta %>%
+  filter(grepl("TPM", meta$supplementary_file)) %>%
+  mutate(clean_title = sub(" \\[.*\\]", "", title))
+
+library(tidyr)
+library(stringr)
+
+metaData <- meta %>%
+  select(
+    sample = clean_title
+  ) %>%
+  separate(
+    sample,
+    into = c("technology", "patient", "region", "cell_id"),
+    sep = "_",
+    remove = FALSE
+  ) %>%
+  mutate(
+    region_long = case_when(
+      str_detect(region, "^PT") ~ "Primary_Tumor",
+      str_detect(region, "^LN") ~ "Lymph_Node_Metastasis",
+      region == "NC" ~ "Normal_Colon"
+    )
+  )
+
+saveRDS(metaData, "../Datos/MetaData.rds")
+write.table(metaData, "../Datos/MetaData.txt", sep = "\t", row.names = F, quote = F)
+
 ```
 
 ## Expression matrix
@@ -70,9 +98,14 @@ dt_long <- rbindlist(lapply(files, function(f) {
 
 expr_dt <- dcast(dt_long, gene ~ sample, value.var = "TPM") %>% as.data.frame
 names(expr_dt) <- gsub("^GSM[0-9]+_|\\.TPM$", "", names(expr_dt))
+colnames(expr_dt) <- sub(
+  "scTrioSeq2Rna_scTrioSeq2Rna_",
+  "scTrioSeq2Rna_",
+  colnames(expr_dt)
+)
 
-saveRDS(expr_dt, "Expr_Mat.rds")
-write.table(expr_dt, "Expr_Mat.txt", sep = "\t", row.names = FALSE, quote = FALSE)
+saveRDS(expr_dt, "../Datos/Expr_Mat.rds")
+write.table(expr_dt, "../Datos/Expr_Mat.txt", sep = "\t", row.names = FALSE, quote = FALSE)
 ```
 
 

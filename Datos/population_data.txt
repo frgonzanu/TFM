@@ -1,0 +1,13 @@
+Patient ID	Gender	Age	AJCC Stage	Primary Site
+CRC01	Female	50	IV	Left Colon
+CRC02	Female	56	IV	Right Colon
+CRC03	Male	60	III	Rectum
+CRC04	Female	71	III	Right Colon
+CRC06	Female	59	III	Left Colon
+CRC09	Male	71	IV	Left Colon
+CRC10	Male	63	III	Left Colon
+CRC11	Female	51	III	Left Colon
+CRC12	Female	49	III	Rectum
+CRC13	Male	51	III	Left Colon
+CRC14	Female	76	III	Rectum
+CRC15	Female	79	IV	Right Colon
