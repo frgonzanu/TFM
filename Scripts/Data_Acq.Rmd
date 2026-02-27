@@ -57,34 +57,6 @@ write.table(metaData, "../Datos/MetaData.txt", sep = "\t", row.names = F, quote 
 
 
 ```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-sub_data <- pData(data) %>%
-  filter(stringr::str_detect(supplementary_file_1, "TPM"))
-
-
-safe_download <- function(url, destfile) {
-  if (file.exists(destfile)) {
-    message("Ya existe: ", destfile, " — se omite.")
-    return(destfile)
-  }
-  download.file(url, destfile, mode = "wb")
-  return(destfile)
-}
-
-if(all(list.files("GSE97693/TPMs/") == basename(sub_data$supplementary_file_1))){
-  print("Todos los archivos han sido descargados.")
-}else{
-  mapply(
-    FUN = safe_download,
-    url = sub_data$supplementary_file_1,
-    destfile = file.path("GSE97693/TPMs", basename(sub_data$supplementary_file_1))
-  )
-}
-```
-
-
-
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
 library(data.table)
 
 files <- list.files("../Datos/GSE97693/TPMs", full.names = TRUE)

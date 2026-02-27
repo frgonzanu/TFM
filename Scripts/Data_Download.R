@@ -14,7 +14,7 @@ library(dplyr)
 sub_data <- pData(getGEO("GSE97693")$GSE97693_series_matrix.txt.gz) %>%
   filter(stringr::str_detect(supplementary_file_1, "TPM"))
 
-all(list.files("GSE97693/TPMs/") == basename(sub_data$supplementary_file_1))
+# all(list.files("GSE97693/TPMs/") == basename(sub_data$supplementary_file_1))
 
 if(all(list.files("GSE97693/TPMs/") == basename(sub_data$supplementary_file_1))){
   print("Todos los archivos han sido descargados.")
