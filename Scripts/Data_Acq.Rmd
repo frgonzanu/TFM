@@ -1,0 +1,130 @@
+---
+title: "Descarga y preparación de datos"
+author: "Francisco Manuel González Nuño"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+ 
+# Datos
+Los datos son provenientes del estudio con DOI 10.1126/science.aau6509 almacenados en GEO con el ID: GSE97693. Los códigos de análisis se pueden ver en [https://github.com/bianshuhui/CRC_code](https://github.com/bianshuhui/CRC_code).
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+library(GEOquery)
+library(dplyr)
+
+data <- getGEO("GSE97693")$GSE97693_series_matrix.txt.gz
+```
+
+## Metadata
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+meta <- pData(data)
+```
+
+## Expression matrix
+
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+sub_data <- pData(data) %>%
+  filter(stringr::str_detect(supplementary_file_1, "TPM"))
+
+
+safe_download <- function(url, destfile) {
+  if (file.exists(destfile)) {
+    message("Ya existe: ", destfile, " — se omite.")
+    return(destfile)
+  }
+  download.file(url, destfile, mode = "wb")
+  return(destfile)
+}
+
+if(all(list.files("GSE97693/TPMs/") == basename(sub_data$supplementary_file_1))){
+  print("Todos los archivos han sido descargados.")
+}else{
+  mapply(
+    FUN = safe_download,
+    url = sub_data$supplementary_file_1,
+    destfile = file.path("GSE97693/TPMs", basename(sub_data$supplementary_file_1))
+  )
+}
+```
+
+
+
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+library(data.table)
+
+files <- list.files("../Datos/GSE97693/TPMs", full.names = TRUE)
+
+dt_long <- rbindlist(lapply(files, function(f) {
+  dt <- fread(f, header = FALSE)
+  dt[, sample := tools::file_path_sans_ext(basename(f))]
+  setnames(dt, c("gene", "TPM", "sample"))
+  return(dt)
+}))
+
+expr_dt <- dcast(dt_long, gene ~ sample, value.var = "TPM") %>% as.data.frame
+names(expr_dt) <- gsub("^GSM[0-9]+_|\\.TPM$", "", names(expr_dt))
+
+saveRDS(expr_dt, "Expr_Mat.rds")
+write.table(expr_dt, "Expr_Mat.txt", sep = "\t", row.names = FALSE, quote = FALSE)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
