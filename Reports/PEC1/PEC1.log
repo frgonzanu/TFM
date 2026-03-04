@@ -1,0 +1,898 @@
+This is pdfTeX, Version 3.141592653-2.6-1.40.25 (MiKTeX 24.1) (preloaded format=pdflatex 2025.9.28)  4 MAR 2026 12:47
+entering extended mode
+ restricted \write18 enabled.
+ %&-line parsing enabled.
+**./PEC1.tex
+(PEC1.tex
+LaTeX2e <2024-11-01> patch level 2
+L3 programming layer <2025-01-18>
+(C:\Users\pacog\AppData\Local\Programs\MiKTeX\tex/latex/base\article.cls
+Document Class: article 2024/06/29 v1.4n Standard LaTeX document class
+(C:\Users\pacog\AppData\Local\Programs\MiKTeX\tex/latex/base\size11.clo
+File: size11.clo 2024/06/29 v1.4n Standard LaTeX file (size option)
+)
+\c@part=\count196
+\c@section=\count197
+\c@subsection=\count198
+\c@subsubsection=\count199
+\c@paragraph=\count266
+\c@subparagraph=\count267
+\c@figure=\count268
+\c@table=\count269
+\abovecaptionskip=\skip49
+\belowcaptionskip=\skip50
+\bibindent=\dimen141
+)
+(C:\Program Files\MiKTeX\tex/latex/geometry\geometry.sty
+Package: geometry 2020/01/02 v5.9 Page Geometry
+
+(C:\Users\pacog\AppData\Local\Programs\MiKTeX\tex/latex/graphics\keyval.sty
+Package: keyval 2022/05/29 v1.15 key=value parser (DPC)
+\KV@toks@=\toks17
+)
+(C:\Users\pacog\AppData\Local\Programs\MiKTeX\tex/generic/iftex\ifvtex.sty
+Package: ifvtex 2019/10/25 v1.7 ifvtex legacy package. Use iftex instead.
+
+(C:\Users\pacog\AppData\Local\Programs\MiKTeX\tex/generic/iftex\iftex.sty
+Package: iftex 2024/12/12 v1.0g TeX engine tests
+))
+\Gm@cnth=\count270
+\Gm@cntv=\count271
+\c@Gm@tempcnt=\count272
+\Gm@bindingoffset=\dimen142
+\Gm@wd@mp=\dimen143
+\Gm@odd@mp=\dimen144
+\Gm@even@mp=\dimen145
+\Gm@layoutwidth=\dimen146
+\Gm@layoutheight=\dimen147
+\Gm@layouthoffset=\dimen148
+\Gm@layoutvoffset=\dimen149
+\Gm@dimlist=\toks18
+
+(C:\Program Files\MiKTeX\tex/latex/geometry\geometry.cfg))
+(C:\Users\pacog\AppData\Local\Programs\MiKTeX\tex/latex/graphics\graphicx.sty
+Package: graphicx 2021/09/16 v1.2d Enhanced LaTeX Graphics (DPC,SPQR)
+
+(C:\Users\pacog\AppData\Local\Programs\MiKTeX\tex/latex/graphics\graphics.sty
+Package: graphics 2024/08/06 v1.4g Standard LaTeX Graphics (DPC,SPQR)
+
+(C:\Users\pacog\AppData\Local\Programs\MiKTeX\tex/latex/graphics\trig.sty
+Package: trig 2023/12/02 v1.11 sin cos tan (DPC)
+)
+(C:\Users\pacog\AppData\Local\Programs\MiKTeX\tex/latex/graphics-cfg\graphics.c
+fg
+File: graphics.cfg 2016/06/04 v1.11 sample graphics configuration
+)
+Package graphics Info: Driver file: pdftex.def on input line 106.
+
+(C:\Users\pacog\AppData\Local\Programs\MiKTeX\tex/latex/graphics-def\pdftex.def
+File: pdftex.def 2024/04/13 v1.2c Graphics/color driver for pdftex
+))
+\Gin@req@height=\dimen150
+\Gin@req@width=\dimen151
+) (C:\Program Files\MiKTeX\tex/latex/booktabs\booktabs.sty
+Package: booktabs 2020/01/12 v1.61803398 Publication quality tables
+\heavyrulewidth=\dimen152
+\lightrulewidth=\dimen153
+\cmidrulewidth=\dimen154
+\belowrulesep=\dimen155
+\belowbottomsep=\dimen156
+\aboverulesep=\dimen157
+\abovetopsep=\dimen158
+\cmidrulesep=\dimen159
+\cmidrulekern=\dimen160
+\defaultaddspace=\dimen161
+\@cmidla=\count273
+\@cmidlb=\count274
+\@aboverulesep=\dimen162
+\@belowrulesep=\dimen163
+\@thisruleclass=\count275
+\@lastruleclass=\count276
+\@thisrulewidth=\dimen164
+)
+(C:\Users\pacog\AppData\Local\Programs\MiKTeX\tex/latex/tools\array.sty
+Package: array 2024/10/17 v2.6g Tabular extension package (FMi)
+\col@sep=\dimen165
+\ar@mcellbox=\box52
+\extrarowheight=\dimen166
+\NC@list=\toks19
+\extratabsurround=\skip51
+\backup@length=\skip52
+\ar@cellbox=\box53
+)
+(C:\Program Files\MiKTeX\tex/latex/fancyhdr\fancyhdr.sty
+Package: fancyhdr 2025/02/07 v5.2 Extensive control of page headers and footers
+
+\f@nch@headwidth=\skip53
+\f@nch@offset@elh=\skip54
+\f@nch@offset@erh=\skip55
+\f@nch@offset@olh=\skip56
+\f@nch@offset@orh=\skip57
+\f@nch@offset@elf=\skip58
+\f@nch@offset@erf=\skip59
+\f@nch@offset@olf=\skip60
+\f@nch@offset@orf=\skip61
+\f@nch@height=\skip62
+\f@nch@footalignment=\skip63
+\f@nch@widthL=\skip64
+\f@nch@widthC=\skip65
+\f@nch@widthR=\skip66
+\@temptokenb=\toks20
+)
+(C:\Program Files\MiKTeX\tex/latex/enumitem\enumitem.sty
+Package: enumitem 2025/02/06 v3.11 Customized lists
+\labelindent=\skip67
+\enit@outerparindent=\dimen167
+\enit@toks=\toks21
+\enit@inbox=\box54
+\enit@count@id=\count277
+\enitdp@description=\count278
+)
+(C:\Users\pacog\AppData\Local\Programs\MiKTeX\tex/latex/hyperref\hyperref.sty
+Package: hyperref 2024-11-05 v7.01l Hypertext links for LaTeX
+
+(C:\Program Files\MiKTeX\tex/latex/kvsetkeys\kvsetkeys.sty
+Package: kvsetkeys 2022-10-05 v1.19 Key value parser (HO)
+)
+(C:\Program Files\MiKTeX\tex/generic/kvdefinekeys\kvdefinekeys.sty
+Package: kvdefinekeys 2019-12-19 v1.6 Define keys (HO)
+)
+(C:\Program Files\MiKTeX\tex/generic/pdfescape\pdfescape.sty
+Package: pdfescape 2019/12/09 v1.15 Implements pdfTeX's escape features (HO)
+
+(C:\Program Files\MiKTeX\tex/generic/ltxcmds\ltxcmds.sty
+Package: ltxcmds 2023-12-04 v1.26 LaTeX kernel commands for general use (HO)
+)
+(C:\Users\pacog\AppData\Local\Programs\MiKTeX\tex/generic/pdftexcmds\pdftexcmds
+.sty
+Package: pdftexcmds 2020-06-27 v0.33 Utility functions of pdfTeX for LuaTeX (HO
+)
+ (C:\Program Files\MiKTeX\tex/generic/infwarerr\infwarerr.sty
+Package: infwarerr 2019/12/03 v1.5 Providing info/warning/error messages (HO)
+)
+Package pdftexcmds Info: \pdf@primitive is available.
+Package pdftexcmds Info: \pdf@ifprimitive is available.
+Package pdftexcmds Info: \pdfdraftmode found.
+))
+(C:\Program Files\MiKTeX\tex/latex/hycolor\hycolor.sty
+Package: hycolor 2020-01-27 v1.10 Color options for hyperref/bookmark (HO)
+)
+(C:\Users\pacog\AppData\Local\Programs\MiKTeX\tex/latex/hyperref\nameref.sty
+Package: nameref 2023-11-26 v2.56 Cross-referencing by name of section
+
+(C:\Program Files\MiKTeX\tex/latex/refcount\refcount.sty
+Package: refcount 2019/12/15 v3.6 Data extraction from label references (HO)
+)
+(C:\Program Files\MiKTeX\tex/generic/gettitlestring\gettitlestring.sty
+Package: gettitlestring 2019/12/15 v1.6 Cleanup title references (HO)
+
+(C:\Program Files\MiKTeX\tex/latex/kvoptions\kvoptions.sty
+Package: kvoptions 2022-06-15 v3.15 Key value format for package options (HO)
+))
+\c@section@level=\count279
+)
+(C:\Users\pacog\AppData\Local\Programs\MiKTeX\tex/latex/etoolbox\etoolbox.sty
+Package: etoolbox 2020/10/05 v2.5k e-TeX tools for LaTeX (JAW)
+\etb@tempcnta=\count280
+)
+(C:\Program Files\MiKTeX\tex/generic/stringenc\stringenc.sty
+Package: stringenc 2019/11/29 v1.12 Convert strings between diff. encodings (HO
+)
+)
+\@linkdim=\dimen168
+\Hy@linkcounter=\count281
+\Hy@pagecounter=\count282
+
+(C:\Users\pacog\AppData\Local\Programs\MiKTeX\tex/latex/hyperref\pd1enc.def
+File: pd1enc.def 2024-11-05 v7.01l Hyperref: PDFDocEncoding definition (HO)
+Now handling font encoding PD1 ...
+... no UTF-8 mapping file for font encoding PD1
+)
+(C:\Program Files\MiKTeX\tex/generic/intcalc\intcalc.sty
+Package: intcalc 2019/12/15 v1.3 Expandable calculations with integers (HO)
+)
+\Hy@SavedSpaceFactor=\count283
+
+(C:\Users\pacog\AppData\Local\Programs\MiKTeX\tex/latex/hyperref\puenc.def
+File: puenc.def 2024-11-05 v7.01l Hyperref: PDF Unicode definition (HO)
+Now handling font encoding PU ...
+... no UTF-8 mapping file for font encoding PU
+)
+Package hyperref Info: Hyper figures OFF on input line 4157.
+Package hyperref Info: Link nesting OFF on input line 4162.
+Package hyperref Info: Hyper index ON on input line 4165.
+Package hyperref Info: Plain pages OFF on input line 4172.
+Package hyperref Info: Backreferencing OFF on input line 4177.
+Package hyperref Info: Implicit mode ON; LaTeX internals redefined.
+Package hyperref Info: Bookmarks ON on input line 4424.
+\c@Hy@tempcnt=\count284
+
+(C:\Users\pacog\AppData\Local\Programs\MiKTeX\tex/latex/url\url.sty
+\Urlmuskip=\muskip17
+Package: url 2013/09/16  ver 3.4  Verb mode for urls, etc.
+)
+LaTeX Info: Redefining \url on input line 4763.
+\XeTeXLinkMargin=\dimen169
+
+(C:\Program Files\MiKTeX\tex/generic/bitset\bitset.sty
+Package: bitset 2019/12/09 v1.3 Handle bit-vector datatype (HO)
+
+(C:\Program Files\MiKTeX\tex/generic/bigintcalc\bigintcalc.sty
+Package: bigintcalc 2019/12/15 v1.5 Expandable calculations on big integers (HO
+)
+))
+\Fld@menulength=\count285
+\Field@Width=\dimen170
+\Fld@charsize=\dimen171
+Package hyperref Info: Hyper figures OFF on input line 6042.
+Package hyperref Info: Link nesting OFF on input line 6047.
+Package hyperref Info: Hyper index ON on input line 6050.
+Package hyperref Info: backreferencing OFF on input line 6057.
+Package hyperref Info: Link coloring OFF on input line 6062.
+Package hyperref Info: Link coloring with OCG OFF on input line 6067.
+Package hyperref Info: PDF/A mode OFF on input line 6072.
+
+(C:\Users\pacog\AppData\Local\Programs\MiKTeX\tex/latex/base\atbegshi-ltx.sty
+Package: atbegshi-ltx 2021/01/10 v1.0c Emulation of the original atbegshi
+package with kernel methods
+)
+\Hy@abspage=\count286
+\c@Item=\count287
+\c@Hfootnote=\count288
+)
+Package hyperref Info: Driver (autodetected): hpdftex.
+(C:\Users\pacog\AppData\Local\Programs\MiKTeX\tex/latex/hyperref\hpdftex.def
+File: hpdftex.def 2024-11-05 v7.01l Hyperref driver for pdfTeX
+
+(C:\Users\pacog\AppData\Local\Programs\MiKTeX\tex/latex/base\atveryend-ltx.sty
+Package: atveryend-ltx 2020/08/19 v1.0a Emulation of the original atveryend pac
+kage
+with kernel methods
+)
+\Fld@listcount=\count289
+\c@bookmark@seq@number=\count290
+(C:\Program Files\MiKTeX\tex/latex/rerunfilecheck\rerunfilecheck.sty
+Package: rerunfilecheck 2025-06-21 v1.11 Rerun checks for auxiliary files (HO)
+
+(C:\Program Files\MiKTeX\tex/generic/uniquecounter\uniquecounter.sty
+Package: uniquecounter 2019/12/15 v1.4 Provide unlimited unique counter (HO)
+)
+Package uniquecounter Info: New unique counter `rerunfilecheck' on input line 2
+84.
+)
+\Hy@SectionHShift=\skip68
+)
+(C:\Users\pacog\AppData\Local\Programs\MiKTeX\tex/latex/tools\tabularx.sty
+Package: tabularx 2023/12/11 v2.12a `tabularx' package (DPC)
+\TX@col@width=\dimen172
+\TX@old@table=\dimen173
+\TX@old@col=\dimen174
+\TX@target=\dimen175
+\TX@delta=\dimen176
+\TX@cols=\count291
+\TX@ftn=\toks22
+)
+(C:\Users\pacog\AppData\Local\Programs\MiKTeX\tex/latex/l3backend\l3backend-pdf
+tex.def
+File: l3backend-pdftex.def 2024-05-08 L3 backend support: PDF output (pdfTeX)
+\l__color_backend_stack_int=\count292
+\l__pdf_internal_box=\box55
+) (PEC1.aux)
+\openout1 = `PEC1.aux'.
+
+LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 28.
+LaTeX Font Info:    ... okay on input line 28.
+LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 28.
+LaTeX Font Info:    ... okay on input line 28.
+LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 28.
+LaTeX Font Info:    ... okay on input line 28.
+LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 28.
+LaTeX Font Info:    ... okay on input line 28.
+LaTeX Font Info:    Checking defaults for TS1/cmr/m/n on input line 28.
+LaTeX Font Info:    ... okay on input line 28.
+LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 28.
+LaTeX Font Info:    ... okay on input line 28.
+LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 28.
+LaTeX Font Info:    ... okay on input line 28.
+LaTeX Font Info:    Checking defaults for PD1/pdf/m/n on input line 28.
+LaTeX Font Info:    ... okay on input line 28.
+LaTeX Font Info:    Checking defaults for PU/pdf/m/n on input line 28.
+LaTeX Font Info:    ... okay on input line 28.
+
+*geometry* driver: auto-detecting
+*geometry* detected driver: pdftex
+*geometry* verbose mode - [ preamble ] result:
+* driver: pdftex
+* paper: <default>
+* layout: <same size as paper>
+* layoutoffset:(h,v)=(0.0pt,0.0pt)
+* modes: 
+* h-part:(L,W,R)=(72.26999pt, 469.75502pt, 72.26999pt)
+* v-part:(T,H,B)=(72.26999pt, 650.43001pt, 72.26999pt)
+* \paperwidth=614.295pt
+* \paperheight=794.96999pt
+* \textwidth=469.75502pt
+* \textheight=650.43001pt
+* \oddsidemargin=0.0pt
+* \evensidemargin=0.0pt
+* \topmargin=-37.1pt
+* \headheight=22.1pt
+* \headsep=25.0pt
+* \topskip=11.0pt
+* \footskip=30.0pt
+* \marginparwidth=59.0pt
+* \marginparsep=10.0pt
+* \columnsep=10.0pt
+* \skip\footins=10.0pt plus 4.0pt minus 2.0pt
+* \hoffset=0.0pt
+* \voffset=0.0pt
+* \mag=1000
+* \@twocolumnfalse
+* \@twosidefalse
+* \@mparswitchfalse
+* \@reversemarginfalse
+* (1in=72.27pt=25.4mm, 1cm=28.453pt)
+
+
+(C:\Users\pacog\AppData\Local\Programs\MiKTeX\tex/context/base/mkii\supp-pdf.mk
+ii
+[Loading MPS to PDF converter (version 2006.09.02).]
+\scratchcounter=\count293
+\scratchdimen=\dimen177
+\scratchbox=\box56
+\nofMPsegments=\count294
+\nofMParguments=\count295
+\everyMPshowfont=\toks23
+\MPscratchCnt=\count296
+\MPscratchDim=\dimen178
+\MPnumerator=\count297
+\makeMPintoPDFobject=\count298
+\everyMPtoPDFconversion=\toks24
+)
+(C:\Users\pacog\AppData\Local\Programs\MiKTeX\tex/latex/epstopdf-pkg\epstopdf-b
+ase.sty
+Package: epstopdf-base 2020-01-24 v2.11 Base part for package epstopdf
+Package epstopdf-base Info: Redefining graphics rule for `.eps' on input line 4
+85.
+
+(C:\Users\pacog\AppData\Local\Programs\MiKTeX\tex/latex/00miktex\epstopdf-sys.c
+fg
+File: epstopdf-sys.cfg 2021/03/18 v2.0 Configuration of epstopdf for MiKTeX
+))
+Package hyperref Info: Link coloring OFF on input line 28.
+ (PEC1.out) (PEC1.out)
+\@outlinefile=\write3
+\openout3 = `PEC1.out'.
+
+<images/noulogo.png, id=75, 671.6292pt x 173.448pt>
+File: images/noulogo.png Graphic file (type png)
+<use images/noulogo.png>
+Package pdftex.def Info: images/noulogo.png  used on input line 34.
+(pdftex.def)             Requested size: 232.32721pt x 60.0pt.
+
+
+[1
+
+{C:/Users/pacog/AppData/Local/MiKTeX/fonts/map/pdftex/pdftex.map} <./images/nou
+logo.png>] (PEC1.toc
+LaTeX Font Info:    External font `cmex10' loaded for size
+(Font)              <10.95> on input line 5.
+LaTeX Font Info:    External font `cmex10' loaded for size
+(Font)              <8> on input line 5.
+LaTeX Font Info:    External font `cmex10' loaded for size
+(Font)              <6> on input line 5.
+)
+\tf@toc=\write4
+\openout4 = `PEC1.toc'.
+
+ (PEC1.lot
+
+File: images/noulogo.png Graphic file (type png)
+<use images/noulogo.png>
+Package pdftex.def Info: images/noulogo.png  used on input line 2.
+(pdftex.def)             Requested size: 69.69815pt x 18.0pt.
+
+pdfTeX warning (ext4): destination with the same identifier (name{page.}) has b
+een already used, duplicate ignored
+<to be read again> 
+                   \relax 
+l.2 ...abla de análisis de riesgos}}{11}{table.2}
+                                                  % [1])
+\tf@lot=\write5
+\openout5 = `PEC1.lot'.
+
+ (PEC1.lof)
+\tf@lof=\write6
+\openout6 = `PEC1.lof'.
+
+
+
+File: images/noulogo.png Graphic file (type png)
+<use images/noulogo.png>
+Package pdftex.def Info: images/noulogo.png  used on input line 55.
+(pdftex.def)             Requested size: 69.69815pt x 18.0pt.
+[1]
+Underfull \hbox (badness 10000) in paragraph at lines 60--60
+[]|\OT1/cmr/bx/n/10.95 T^^S^^Ptulo pro-vi-
+ []
+
+LaTeX Font Info:    External font `cmex10' loaded for size
+(Font)              <9> on input line 69.
+LaTeX Font Info:    External font `cmex10' loaded for size
+(Font)              <5> on input line 69.
+
+
+File: images/noulogo.png Graphic file (type png)
+<use images/noulogo.png>
+Package pdftex.def Info: images/noulogo.png  used on input line 83.
+(pdftex.def)             Requested size: 69.69815pt x 18.0pt.
+[2]
+Overfull \hbox (14.38768pt too wide) in paragraph at lines 102--103
+[]\OT1/cmr/m/n/10.95 Finalmente, se eval-uar^^Sa de man-era ex-plorato-ria la a
+so-ciaci^^Son en-tre la ac-ti-vaci^^Son de la firma metast^^Sasica,
+ []
+
+
+
+File: images/noulogo.png Graphic file (type png)
+<use images/noulogo.png>
+Package pdftex.def Info: images/noulogo.png  used on input line 112.
+(pdftex.def)             Requested size: 69.69815pt x 18.0pt.
+[3]
+
+File: images/noulogo.png Graphic file (type png)
+<use images/noulogo.png>
+Package pdftex.def Info: images/noulogo.png  used on input line 143.
+(pdftex.def)             Requested size: 69.69815pt x 18.0pt.
+[4]
+
+File: images/noulogo.png Graphic file (type png)
+<use images/noulogo.png>
+Package pdftex.def Info: images/noulogo.png  used on input line 163.
+(pdftex.def)             Requested size: 69.69815pt x 18.0pt.
+[5]
+
+File: images/noulogo.png Graphic file (type png)
+<use images/noulogo.png>
+Package pdftex.def Info: images/noulogo.png  used on input line 199.
+(pdftex.def)             Requested size: 69.69815pt x 18.0pt.
+[6]
+
+File: images/noulogo.png Graphic file (type png)
+<use images/noulogo.png>
+Package pdftex.def Info: images/noulogo.png  used on input line 278.
+(pdftex.def)             Requested size: 69.69815pt x 18.0pt.
+[7]
+<images/Gantt.png, id=192, 922.428pt x 326.967pt>
+File: images/Gantt.png Graphic file (type png)
+<use images/Gantt.png>
+Package pdftex.def Info: images/Gantt.png  used on input line 283.
+(pdftex.def)             Requested size: 469.75502pt x 166.51147pt.
+
+
+File: images/noulogo.png Graphic file (type png)
+<use images/noulogo.png>
+Package pdftex.def Info: images/noulogo.png  used on input line 292.
+(pdftex.def)             Requested size: 69.69815pt x 18.0pt.
+[8 <./images/Gantt.png>]
+Underfull \hbox (badness 10000) in paragraph at lines 344--344
+[]|\OT1/cmr/bx/n/10.95 Impacto po-
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 344--344
+[]|\OT1/cmr/bx/n/10.95 Estrategia de mit-i-
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 344--344
+[]|\OT1/cmr/m/n/10.95 Alcance ex-
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 344--344
+\OT1/cmr/m/n/10.95 ce-sivo del
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 344--344
+[]|\OT1/cmr/m/n/10.95 Intentar abor-dar si-
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 344--344
+\OT1/cmr/m/n/10.95 mult^^Saneamente het-ero-
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 344--344
+\OT1/cmr/m/n/10.95 genei-dad celu-lar, firma
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 344--344
+\OT1/cmr/m/n/10.95 metast^^Sasica, val-i-daci^^Son
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 344--344
+\OT1/cmr/m/n/10.95 cl^^S^^Pnica fuerte y com-
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 344--344
+[]|\OT1/cmr/m/n/10.95 Dispersi^^Son de
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 344--344
+\OT1/cmr/m/n/10.95 re-sul-ta-dos y
+ []
+
+
+Underfull \hbox (badness 1320) in paragraph at lines 344--344
+\OT1/cmr/m/n/10.95 pec^^S^^Pficos cen-trales (firma
+ []
+
+
+Underfull \hbox (badness 2326) in paragraph at lines 344--344
+\OT1/cmr/m/n/10.95 metast^^Sasica PT vs LN)
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 344--344
+[]|\OT1/cmr/m/n/10.95 Limitaci^^Son
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 344--344
+[]|\OT1/cmr/m/n/10.95 Resultados in-
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 344--344
+\OT1/cmr/m/n/10.95 com-ple-tos o
+ []
+
+
+Underfull \hbox (badness 7869) in paragraph at lines 344--344
+[]|\OT1/cmr/m/n/10.95 Definir desde el ini-cio
+ []
+
+
+Underfull \hbox (badness 7397) in paragraph at lines 344--344
+\OT1/cmr/m/n/10.95 rado y evi-tar cam-bios
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 344--344
+[]|\OT1/cmr/m/n/10.95 Las difer-en-cias tran-
+ []
+
+
+Underfull \hbox (badness 1910) in paragraph at lines 344--344
+\OT1/cmr/m/n/10.95 script^^Somicas podr^^S^^Pan ser
+ []
+
+
+Underfull \hbox (badness 5288) in paragraph at lines 344--344
+\OT1/cmr/m/n/10.95 d^^Sebiles, al-ta-mente vari-
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 344--344
+\OT1/cmr/m/n/10.95 con-sis-tente o
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 344--344
+\OT1/cmr/m/n/10.95 mod-elo pre-dic-
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 344--344
+[]|\OT1/cmr/m/n/10.95 Bajo n^^Sumero
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 344--344
+\OT1/cmr/m/n/10.95 de pa-cientes
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 344--344
+[]|\OT1/cmr/m/n/10.95 Sobreinterpre-
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 344--344
+\OT1/cmr/m/n/10.95 taci^^Son es-
+ []
+
+
+Underfull \hbox (badness 2922) in paragraph at lines 344--344
+[]|\OT1/cmr/m/n/10.95 Uso de pseu-dob-ulk por
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 344--344
+[]|\OT1/cmr/m/n/10.95 Bajo n^^Sumero
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 344--344
+\OT1/cmr/m/n/10.95 de c^^Selulas
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 344--344
+[]|\OT1/cmr/m/n/10.95 Comparaciones
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 344--344
+\OT1/cmr/m/n/10.95 Nor-mal vs
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 344--344
+\OT1/cmr/m/n/10.95 Tu-mor es-
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 344--344
+\OT1/cmr/m/n/10.95 tad^^S^^Psticamente
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 344--344
+[]|\OT1/cmr/m/n/10.95 Dependencia
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 344--344
+\OT1/cmr/m/n/10.95 en-tre c^^Selulas
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 344--344
+\OT1/cmr/m/n/10.95 (pseu-dor-repli-
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 344--344
+[]|\OT1/cmr/m/n/10.95 Inflaci^^Son ar-ti-fi-
+ []
+
+
+Underfull \hbox (badness 5036) in paragraph at lines 344--344
+\OT1/cmr/m/n/10.95 cial de sig-nifi-
+ []
+
+
+Overfull \hbox (3.48264pt too wide) in paragraph at lines 344--344
+[]|\OT1/cmr/m/n/10.95 Heterogeneidad
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 344--344
+\OT1/cmr/m/n/10.95 in-ter-pa-ciente
+ []
+
+
+Underfull \hbox (badness 7168) in paragraph at lines 344--344
+[]|\OT1/cmr/m/n/10.95 Dificultad para
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 344--344
+[]|\OT1/cmr/m/n/10.95 Modelos que con-trolen
+ []
+
+
+Underfull \hbox (badness 2012) in paragraph at lines 344--344
+\OT1/cmr/m/n/10.95 efecto pa-ciente y eval-u-
+ []
+
+
+Underfull \hbox (badness 3138) in paragraph at lines 344--344
+\OT1/cmr/m/n/10.95 aci^^Son de es-ta-bil-i-dad de
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 344--344
+[]|\OT1/cmr/m/n/10.95 Sobreajuste
+ []
+
+
+Underfull \hbox (badness 4316) in paragraph at lines 344--344
+[]|\OT1/cmr/m/n/10.95 Dataset de tama~no re-
+ []
+
+
+Underfull \hbox (badness 2020) in paragraph at lines 344--344
+\OT1/cmr/m/n/10.95 ducido para clasi-fi-caci^^Son
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 344--344
+[]|\OT1/cmr/m/n/10.95 Modelos
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 344--344
+\OT1/cmr/m/n/10.95 con buen
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 344--344
+\OT1/cmr/m/n/10.95 rendimiento
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 344--344
+\OT1/cmr/m/n/10.95 aparente pero
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 344--344
+\OT1/cmr/m/n/10.95 baja gen-er-al-
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 344--344
+[]|\OT1/cmr/m/n/10.95 Validaci^^Son cruzada es-
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 344--344
+\OT1/cmr/m/n/10.95 tricta y lim-itaci^^Son de
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 344--344
+[]|\OT1/cmr/m/n/10.95 Problemas
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 344--344
+\OT1/cmr/m/n/10.95 en an-o-taci^^Son
+ []
+
+
+Underfull \hbox (badness 2478) in paragraph at lines 344--344
+[]|\OT1/cmr/m/n/10.95 Errores en iden-ti-fi-caci^^Son
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 344--344
+[]|\OT1/cmr/m/n/10.95 Interpretaci^^Son
+ []
+
+
+Underfull \hbox (badness 5231) in paragraph at lines 344--344
+\OT1/cmr/m/n/10.95 biol^^Sogica in-cor-
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 344--344
+[]|\OT1/cmr/m/n/10.95 Uso com-bi-nado de
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 344--344
+\OT1/cmr/m/n/10.95 m^^Setodos au-tom^^Saticos
+ []
+
+
+Underfull \hbox (badness 6047) in paragraph at lines 344--344
+\OT1/cmr/m/n/10.95 (Sin-gleR) y mar-cadores
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 344--344
+[]|\OT1/cmr/m/n/10.95 Resultados
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 344--344
+\OT1/cmr/m/n/10.95 poco in-ter-
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 344--344
+[]|\OT1/cmr/m/n/10.95 Dificultad
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 344--344
+\OT1/cmr/m/n/10.95 en dis-cusi^^Son
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 344--344
+[]|\OT1/cmr/m/n/10.95 An^^Salisis de en-riquec-
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 344--344
+\OT1/cmr/m/n/10.95 y con-tex-tu-al-izaci^^Son en
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 344--344
+[]|\OT1/cmr/m/n/10.95 Problemas
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 344--344
+\OT1/cmr/m/n/10.95 t^^Secnicos en
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 344--344
+[]|\OT1/cmr/m/n/10.95 Retrasos ini-
+ []
+
+
+LaTeX Warning: `!h' float specifier changed to `!ht'.
+
+
+
+File: images/noulogo.png Graphic file (type png)
+<use images/noulogo.png>
+Package pdftex.def Info: images/noulogo.png  used on input line 382.
+(pdftex.def)             Requested size: 69.69815pt x 18.0pt.
+[9]
+
+File: images/noulogo.png Graphic file (type png)
+<use images/noulogo.png>
+Package pdftex.def Info: images/noulogo.png  used on input line 396.
+(pdftex.def)             Requested size: 69.69815pt x 18.0pt.
+[10]
+
+File: images/noulogo.png Graphic file (type png)
+<use images/noulogo.png>
+Package pdftex.def Info: images/noulogo.png  used on input line 396.
+(pdftex.def)             Requested size: 69.69815pt x 18.0pt.
+[11] (PEC1.aux)
+ ***********
+LaTeX2e <2024-11-01> patch level 2
+L3 programming layer <2025-01-18>
+ ***********
+
+
+Package rerunfilecheck Warning: File `PEC1.out' has changed.
+(rerunfilecheck)                Rerun to get outlines right
+(rerunfilecheck)                or use package `bookmark'.
+
+Package rerunfilecheck Info: Checksums for `PEC1.out':
+(rerunfilecheck)             Before: ED3A4189105B0C82B549F2F37DD68D74;2959
+(rerunfilecheck)             After:  B72E912E88E561AB91EC0E8C4F9B7C9B;2917.
+ ) 
+Here is how much of TeX's memory you used:
+ 9977 strings out of 473530
+ 157090 string characters out of 5714794
+ 581497 words of memory out of 5000000
+ 33021 multiletter control sequences out of 15000+600000
+ 565634 words of font info for 59 fonts, out of 8000000 for 9000
+ 1141 hyphenation exceptions out of 8191
+ 75i,16n,79p,710b,581s stack positions out of 10000i,1000n,20000p,200000b,200000s
+ <C:\Users\pacog\AppData\Local\MiKTeX\fonts/pk/ljfour/jknappen/ec/dpi600\tcrm
+1095.pk><C:/Users/pacog/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfon
+ts/cm/cmbx10.pfb><C:/Users/pacog/AppData/Local/Programs/MiKTeX/fonts/type1/publ
+ic/amsfonts/cm/cmbx12.pfb><C:/Users/pacog/AppData/Local/Programs/MiKTeX/fonts/t
+ype1/public/amsfonts/cm/cmr10.pfb><C:/Users/pacog/AppData/Local/Programs/MiKTeX
+/fonts/type1/public/amsfonts/cm/cmr12.pfb><C:/Users/pacog/AppData/Local/Program
+s/MiKTeX/fonts/type1/public/amsfonts/cm/cmr6.pfb><C:/Users/pacog/AppData/Local/
+Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmr8.pfb><C:/Users/pacog/AppData
+/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmti10.pfb><C:/Users/paco
+g/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmtt10.pfb><C:/U
+sers/pacog/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmtt9.p
+fb>
+Output written on PEC1.pdf (13 pages, 351888 bytes).
+PDF statistics:
+ 293 PDF objects out of 1000 (max. 8388607)
+ 74 named destinations out of 1000 (max. 500000)
+ 155 words of extra memory for PDF output out of 10000 (max. 10000000)
+
