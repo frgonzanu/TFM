@@ -1,7 +1,6 @@
 ---
 title: "Descarga y preparación de datos"
 author: "Francisco Manuel González Nuño"
-date: "`r Sys.Date()`"
 output: html_document
 ---
 

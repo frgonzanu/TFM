@@ -1,0 +1,196 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[spanish]{babel}
+\usepackage{amsmath,amssymb}
+\usepackage{hyperref}
+\usepackage[backend=biber,style=apa,sorting=none]{biblatex}
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.8em}
+
+
+\addbibresource{references.bib}
+
+% Hacer las citas numéricas
+\DeclareFieldFormat{labelnumberwidth}{[#1]}
+\setlength{\biblabelsep}{0.5em}
+
+
+\title{Estado del arte del proyecto}
+\author{}
+\date{}
+
+\begin{document}
+
+\maketitle
+\tableofcontents
+
+\section{Cáncer colorrectal: contexto biológico y clínico}
+
+El cáncer colorrectal (CRC) es una neoplasia frecuente y mortal a nivel mundial. Según informes recientes, fue el tercer tumor maligno más diagnosticado y la segunda causa de muerte por cáncer en 2020, con aproximadamente 1.9 millones de casos nuevos y 0.94 millones de muertes a nivel global; su incidencia es mayor en países desarrollados, aunque está en aumento en regiones de ingresos medios por factores de estilo de vida occidentalizados \cite{ref1,ref2}.
+
+La supervivencia a cinco años varía según el estadio: cerca del 90\% en estadios tempranos (localizados) frente a solo alrededor del 10\% en presencia de metástasis a distancia \cite{ref3}. De hecho, la aparición de metástasis es el principal factor que agrava el pronóstico. Aproximadamente el 90\% de las muertes por CRC se atribuye a enfermedad metastásica \cite{ref3}. En particular, la diseminación a ganglios linfáticos o a hígado reduce drásticamente la supervivencia.
+
+La carcinogénesis colorrectal se explica clásicamente por la secuencia adenoma--carcinoma \cite{ref4}. Pólipos adenomatosos benignos pueden acumular alteraciones genéticas (por ejemplo mutaciones en \textit{APC}, \textit{KRAS}, \textit{TP53}) y progresar a carcinoma maligno. Se estima que hasta el 95\% de los CRC son adenocarcinomas derivados de adenomas benignos que adquieren características malignas \cite{ref4}.
+
+Las bases genéticas de este proceso incluyen la inactivación de \textit{APC}, un supresor tumoral clave en la vía Wnt, como evento temprano, seguida frecuentemente de mutaciones activadoras en \textit{KRAS} y alteraciones en \textit{TP53}.
+
+Además, el CRC es altamente heterogéneo tanto entre pacientes como dentro de cada tumor. Esta heterogeneidad se manifiesta en diferencias genómicas, epigenómicas y transcriptómicas, así como en la composición del microambiente tumoral \cite{ref2}. Por ejemplo, se han definido cuatro subtipos moleculares de consenso (CMS1--CMS4) con características biológicas y pronósticas distintas.
+
+En resumen, el CRC representa un problema de salud global relevante: presenta alta incidencia, mortalidad relacionada con metástasis y un modelo de evolución progresivo que motiva la investigación de factores de riesgo y biomarcadores moleculares \cite{ref1,ref4}.
+
+\section{Biomarcadores en cáncer colorrectal}
+
+\subsection{Biomarcadores genéticos}
+
+Numerosos biomarcadores moleculares se han identificado en CRC, tanto por su rol en la carcinogénesis como por su utilidad clínica. Genes como \textit{APC}, \textit{KRAS}, \textit{TP53} y \textit{BRAF} son clásicos.
+
+Mutaciones en \textit{APC} ocurren tempranamente en la secuencia adenoma--carcinoma, mientras que \textit{KRAS} se activa aproximadamente en el 40--45\% de los CRC \cite{ref5}. \textit{TP53} también se altera frecuentemente en etapas avanzadas (alrededor del 50--60\% de los tumores). Además, la mutación \textit{BRAF} V600E se encuentra en cerca del 10\% de los casos y se asocia con peor pronóstico \cite{ref6}.
+
+Desde el punto de vista clínico, estas mutaciones se utilizan como biomarcadores predictivos y pronósticos:
+
+\begin{itemize}
+\item \textit{KRAS} mutado predice falta de respuesta a terapias anti-EGFR (por ejemplo cetuximab) en CRC metastásico \cite{ref6,ref5}.
+\item \textit{BRAF} V600E indica mal pronóstico y reduce la eficacia de terapias anti-EGFR.
+\item Otras rutas implicadas incluyen alteraciones en \textit{PIK3CA}, \textit{SMAD4} y vías de señalización Wnt/TGF-$\beta$.
+\end{itemize}
+
+Además, la inestabilidad de microsatélites (MSI) constituye otra característica genética importante. Los tumores con MSI presentan perfiles moleculares distintos y suelen mostrar mejor respuesta a inmunoterapia.
+
+\subsection{Factores ambientales y epidemiológicos}
+
+La etiología del CRC es multifactorial. Además de la predisposición genética, existen factores ambientales y de estilo de vida que modulan el riesgo.
+
+Entre los principales factores destacan:
+
+\begin{itemize}
+\item Edad
+\item Dieta
+\item Obesidad
+\item Tabaquismo
+\item Consumo de alcohol
+\item Actividad física
+\item Enfermedades inflamatorias intestinales crónicas
+\end{itemize}
+
+Un meta-análisis identificó varios factores de riesgo relevantes. La enfermedad inflamatoria intestinal confiere un riesgo relativo de aproximadamente 2.93 (IC 1.79--4.81) \cite{ref7}. El historial familiar de CRC se asocia con un riesgo relativo de aproximadamente 1.79 \cite{ref7}.
+
+En cuanto al estilo de vida, el aumento del índice de masa corporal y el tabaquismo crónico también incrementan el riesgo. Asimismo, un alto consumo de carne roja y procesada se asocia con mayor incidencia, mientras que dietas ricas en frutas y verduras se correlacionan con un riesgo reducido \cite{ref7}.
+
+\section{Metástasis en cáncer colorrectal}
+
+\subsection{Mecanismos moleculares de metástasis}
+
+La metástasis en CRC es un proceso complejo que incluye múltiples pasos moleculares. Uno de los mecanismos clave es la transición epitelio-mesenquimal (EMT), mediante la cual las células tumorales adquieren propiedades migratorias e invasivas \cite{ref8}.
+
+Durante este proceso se pierde adhesión célula-célula (por ejemplo mediante disminución de E-cadherina) y se reorganiza el citoesqueleto. Factores de transcripción como \textit{SNAIL}, \textit{ZEB} y \textit{TWIST} regulan este cambio \cite{ref8}.
+
+La metástasis también requiere remodelación del microambiente tumoral, incluyendo:
+
+\begin{itemize}
+\item Activación de fibroblastos asociados al tumor
+\item Señalización inflamatoria
+\item Angiogénesis
+\item Evasión inmunitaria
+\end{itemize}
+
+Diversas vías de señalización como TGF-$\beta$, Wnt/$\beta$-catenina y NF-$\kappa$B se han asociado con fenotipos metastásicos en CRC \cite{ref8}.
+
+\subsection{Biomarcadores asociados a metástasis}
+
+Uno de los biomarcadores más estudiados es \textit{MACC1} (Metastasis Associated in Colon Cancer 1), identificado como predictor de metástasis y pronóstico \cite{ref3}. La expresión elevada de este gen se correlaciona con enfermedad metastásica y menor supervivencia.
+
+Otros genes implicados incluyen:
+
+\begin{itemize}
+\item \textit{PIK3CA}
+\item \textit{SMAD4}
+\item \textit{MET}
+\item \textit{CXCR4}
+\end{itemize}
+
+Asimismo, se han propuesto microARNs como posibles marcadores de procesos de EMT y metástasis.
+
+\subsection{Firmas transcriptómicas metastásicas}
+
+El concepto de firma metastásica se refiere a conjuntos de genes cuya expresión distingue tejidos metastásicos de no metastásicos.
+
+Murcott et al. identificaron una firma epigenético-transcripcional asociada a metástasis hepática de CRC basada en niveles de 5-hidroximetilcitosina que incluye genes como \textit{FN1}, \textit{CDH2}, \textit{ESR1} y \textit{PLG} \cite{ref10}.
+
+Sin embargo, muchas de estas firmas han sido identificadas mediante análisis transcriptómico bulk, lo que limita la resolución celular.
+
+\section{Transcriptómica en cáncer colorrectal}
+
+\subsection{Transcriptómica bulk}
+
+La transcriptómica tradicional basada en RNA-seq de tejido bulk ha sido ampliamente utilizada para caracterizar perfiles globales de expresión génica en CRC \cite{ref10}. Esta aproximación permite identificar genes diferencialmente expresados y subtipos moleculares como los CMS.
+
+No obstante, presenta limitaciones importantes, ya que el tejido tumoral es una mezcla de múltiples tipos celulares, incluyendo células tumorales, estromales e inmunes.
+
+\subsection{Transcriptómica de célula única}
+
+La tecnología de RNA-seq de célula única (scRNA-seq) permite analizar la expresión génica a nivel de células individuales, revelando la heterogeneidad intratumoral.
+
+Entre sus principales ventajas se encuentran:
+
+\begin{itemize}
+\item Identificación de poblaciones celulares raras
+\item Estudio detallado del microambiente tumoral
+\item Reconstrucción de trayectorias celulares mediante pseudotime
+\end{itemize}
+
+Diversos atlas de scRNA-seq en CRC han demostrado la coexistencia de múltiples subtipos moleculares dentro de un mismo tumor \cite{ref2}.
+
+\section{Estrategias de análisis en scRNA-seq}
+
+\subsection{Clustering y anotación celular}
+
+Un paso clave en el análisis de scRNA-seq es el agrupamiento de células según su perfil de expresión. Métodos como Seurat o Scanpy utilizan reducción de dimensionalidad y algoritmos de clustering como Leiden o k-means.
+
+Posteriormente, los clusters se anotan mediante marcadores conocidos, por ejemplo:
+
+\begin{itemize}
+\item \textit{EPCAM} para células epiteliales
+\item \textit{CD3} para linfocitos T
+\item \textit{COL1A1} para fibroblastos
+\item \textit{PECAM1} para células endoteliales
+\end{itemize}
+
+\subsection{Estrategia pseudobulk}
+
+El análisis pseudobulk consiste en agregar datos de múltiples células de scRNA-seq para generar perfiles equivalentes a RNA-seq bulk.
+
+Este enfoque permite aplicar herramientas estadísticas robustas como:
+
+\begin{itemize}
+\item DESeq2
+\item edgeR
+\end{itemize}
+
+En el contexto de este proyecto, el enfoque pseudobulk permite comparar la expresión génica agregada entre pacientes con y sin metástasis ganglionares.
+
+\subsection{Machine learning en transcriptómica}
+
+Las técnicas de machine learning se han aplicado ampliamente al análisis transcriptómico para clasificar tumores y detectar biomarcadores.
+
+Modelos como Random Forest, SVM o redes neuronales pueden utilizarse para predecir características clínicas a partir de perfiles de expresión génica.
+
+\section{Brecha de conocimiento}
+
+A pesar de los avances, existen importantes vacíos en el conocimiento. El CRC es una enfermedad altamente heterogénea tanto a nivel molecular como celular \cite{ref2}. Muchos biomarcadores conocidos derivan de estudios bulk, lo que limita la comprensión de la heterogeneidad celular.
+
+Aunque se sabe que procesos como EMT participan en la metástasis \cite{ref8}, todavía falta identificar con precisión qué subpoblaciones celulares expresan estos programas transcripcionales.
+
+Asimismo, aunque genes como \textit{MACC1} se han asociado a metástasis \cite{ref3}, todavía no existen firmas metastásicas definidas basadas en datos de célula única.
+
+Por tanto, existe una oportunidad para integrar datos de scRNA-seq con enfoques pseudobulk y métodos de machine learning con el objetivo de identificar nuevas firmas transcriptómicas asociadas a metástasis ganglionares en CRC.
+
+En conclusión, el cáncer colorrectal es una enfermedad compleja con biomarcadores conocidos pero también con importantes incógnitas. La combinación de transcriptómica de célula única, análisis pseudobulk y aprendizaje automático ofrece nuevas oportunidades para abordar estas lagunas de conocimiento.
+
+%\bibliographystyle{apalike}
+%\bibliography{references}
+%\printbibliography
+
+\end{document}
