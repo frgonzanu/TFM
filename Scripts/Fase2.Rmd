@@ -324,7 +324,7 @@ pc_mat <- pca_res$x[,1:50]
 library(proxy)
 
 # distancias útiles
-dist_euclid <- dist(pc_mat)
+# dist_euclid <- dist(pc_mat)
 dist_cosine <- proxy::dist(pc_mat, method = "cosine")
 dist_cor <- as.dist(1 - cor(t(pc_mat), method = "pearson"))
 ```
@@ -363,7 +363,7 @@ k <- 20
 knn <- nn2(pc_mat, k = k)
 
 edges <- cbind(
-  rep(1:n, each = k),
+  rep(1:nrow(pc_mat), each = k),
   as.vector(knn$nn.idx)
 )
 
@@ -473,22 +473,27 @@ HDBSCAN_plot + Louvain_plot + Cor_plot + Cosine_plot
 Probamos métodos como PLSD-DA, que es una técnica de reducción de dimensionalidad supervisada que busca encontrar componentes que maximicen la separación entre clases predefinidas. En este caso, se podrían usar las regiones anatómicas como clases para evaluar si existen patrones de expresión génica específicos asociados a cada región.
 
 ```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+library(mixOmics)
+clclc <- clusters_cor
 plsda_res <- plsda(mat_norm_log1p,
-                   metaData$patient, 
+                   # metaData$patient, 
+                   clclc,
                    ncomp = 5)
 plsda_df <- data.frame(plsda_res$variates, metaData)
 ggplot(data = plsda_df,
        aes(x = X.comp1,
            y = X.comp2,
-           shape = cell_id,
-           color = patient)) +
+           shape = patient,
+           # color = patient
+           color = as.factor(clclc)
+           )) +
   geom_point(alpha = 0.7) + 
   labs(title = "PLS-DA: Components 1 and 2",
        x = "PLS-DA Component 1",
        y = "PLS-DA Component 2")
 
 plotIndiv(plsda_res, comp = c(1,2),
-          group = metaData$patient, 
+          group = as.factor(clclc), 
           legend = TRUE,
           ellipse = TRUE,
           title = "PLS-DA")
@@ -498,12 +503,13 @@ vip_scores <- vip(plsda_res)
 head(vip_scores[order(vip_scores[,1], decreasing = TRUE), ], n=10)
 
 ```
-Otros méeodos de reducción de variables supervisadas como sPLS-DA, que es una extensión de PLS-DA que incorpora una selección de variables para identificar las características más relevantes que contribuyen a la separación entre clases. Esto podría ayudar a identificar genes específicos que están asociados con cada región anatómica.
+Otros métodos de reducción de variables supervisadas como sPLS-DA, que es una extensión de PLS-DA que incorpora una selección de variables para identificar las características más relevantes que contribuyen a la separación entre clases. Esto podría ayudar a identificar genes específicos que están asociados con cada región anatómica.
 Lo probamos a continuación:
 
 ```{r}
+clclc <- clusters_hdb
 splsda_res <- splsda(mat_norm_log1p,
-                     metaData$region_long, 
+                     clclc, 
                      ncomp = 5,
                      keepX = c(50, 50, 50, 50, 50))
 splsda_df <- data.frame(splsda_res$variates, metaData)
@@ -511,7 +517,7 @@ ggplot(data = splsda_df,
        aes(x = X.comp1,
            y = X.comp2,
            shape = region_long,
-           color = patient)) +
+           color = as.factor(clclc))) +
   geom_point(alpha = 0.7) + 
   stat_ellipse(level = 0.95) +
   scale_color_brewer(palette = "Dark2") +
@@ -520,11 +526,189 @@ ggplot(data = splsda_df,
        y = "sPLS-DA Component 2")
 
 plotIndiv(splsda_res, comp = c(1,2),
-          group = metaData$patient, 
+          group = as.factor(clclc), 
           legend = TRUE,
           ellipse = TRUE,
           title = "sPLS-DA")
 ```
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE, fig.height=20}
+clus <- list(
+  hdbscan = clusters_hdb,
+  louvain = clusters_louvain,
+  cor_hclust = clusters_cor,
+  cosine_hclust = clusters_cos,
+  patient = metaData$patient,
+  region = metaData$region_long
+)
+list_plsda_plot <- list()
+for(n in names(clus)){
+  c <- clus[[n]]
+  plsda_it <- plsda(mat_norm_log1p,
+                    c,
+                    ncomp = 5)
+  list_plsda_plot[[n]] <- plotIndiv(plsda_it,
+            comp = c(1,2),
+            group = as.factor(c), 
+            legend = TRUE,
+            ellipse = TRUE,
+            title = paste("PLS-DA - Grouping by", n))
+}
+
+(list_plsda_plot[["hdbscan"]]$graph + list_plsda_plot[["louvain"]]$graph) / (list_plsda_plot[["cor_hclust"]]$graph + list_plsda_plot[["cosine_hclust"]]$graph) / (list_plsda_plot[["patient"]]$graph + list_plsda_plot[["region"]]$graph)
+
+
+```
+
+
+
+
+
+```{r}
+plsda_no_tumor <- as.data.frame(mat_norm_log1p) %>% 
+  filter(metaData$region_long != "Normal_Colon") %>% 
+  plsda(metaData %>% 
+          filter(region_long != "Normal_Colon") %>% 
+          pull(region_long), 
+        ncomp = 5)
+
+plotIndiv(plsda_no_tumor,
+          group = metaData %>% 
+            filter(region_long != "Normal_Colon") %>% 
+            pull(region_long), 
+          comp = c(1,2), 
+          legend = T, 
+          ellipse = T)
+
+vip_no_tumor <- vip(plsda_no_tumor)
+head(vip_no_tumor[order(vip_no_tumor[,1], 
+                        decreasing=T),], 
+     n = 30)
+
+```
+
+
+
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
 ```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
 
 ```
