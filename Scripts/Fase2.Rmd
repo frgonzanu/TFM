@@ -12,6 +12,10 @@ knitr::opts_chunk$set(echo = TRUE)
 library(dplyr)
 library(mixOmics)
 library(ggplot2)
+
+conflicted::conflict_prefer("select", "dplyr")
+conflicted::conflict_prefer("filter", "dplyr")
+conflicted::conflict_prefer("rename", "dplyr")
 ```
 
 
@@ -27,11 +31,8 @@ popData2 <- popData %>%
 
 metaData <- metaData %>%
   merge(popData2, by = "patient")
-
-conflicted::conflict_prefer("select", "dplyr")
-conflicted::conflict_prefer("filter", "dplyr")
-conflicted::conflict_prefer("rename", "dplyr")
 ```
+
 
 
 # Exploración de datos - reducción de dimensionalidad
@@ -40,13 +41,14 @@ En primer lugar, para poder evaluar la PCA, eliminamos aquellos genes que no tie
 
 ```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
 mat <- expr_dt %>% tibble::column_to_rownames("gene") %>% t
+mat <- mat[metaData$sample,]
 
-zero_var_cols <- which(apply(mat, 2, sd) == 0)
-length(zero_var_cols)
-sum(rowMeans(mat[,zero_var_cols]))
+mat_norm_log1p_tot <- log1p(mat)
 
-mat <- mat[,apply(mat, 2, sd) != 0]
-mat_norm_log1p <- log1p(mat)
+# seleccionamos genes con HVG
+hvd_idx <- mixhvg::FindVariableFeaturesMix(t(mat_norm_log1p_tot))
+mat_norm_log1p <- mat_norm_log1p_tot[,hvd_idx]
+mat2 <- mat_norm_log1p[,colnames(mat_norm_log1p) != c("UGDH-AS1", "MALAT1")]
 ```
 
 
@@ -57,146 +59,124 @@ mat_norm_log1p <- log1p(mat)
 ```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
 pca_res <- prcomp(mat_norm_log1p,
                   scale. = T)
-pca_df <- data.frame(pca_res$x, metaData)
+pca_df <- data.frame(pca_res$x, metaData) %>%
+  mutate(
+    lab = case_when(
+      PC1 > 100 ~ sample,
+      TRUE ~ ""
+  )
+  )
 
 ggplot(data = pca_df,
        aes(
          x = PC1,
          y = PC2,
-         color = region_long
+         color = patient
        )) +
+  geom_point() +
+  geom_text(aes(label = lab), 
+            hjust = 1, 
+            show.legend = F)
+```
+En este caso, las dos primeras componentes explican un porcentaje de varianza `r round(summary(pca_res)$importance[2,1]*100, 2)` y `r round(summary(pca_res)$importance[2,2]*100, 2)`, respectivamente.
+
+Observamos un marcado outlier en la PCA, vamos a ver qué pasa:
+
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+expr_dt %>%
+  tibble::column_to_rownames(var = "gene") %>%
+  filter(scTrioSeq2Rna_CRC06_LN1_047!=0) %>%
+  t %>%
+  scale() %>%
+  t %>%
+  as.data.frame %>% 
+  pull(scTrioSeq2Rna_CRC06_LN1_047) %>%
+  abs() %>%
+  sort(decreasing = T) %>%
+  head(1000) %>%
+  tibble::enframe(name = "gene", value = "zscore") %>%
+  ggplot(aes(x = gene, y = zscore)) +
   geom_point()
+
 ```
 
-<!-- En este caso, las dos primeras componentes explican un porcentaje de varianza `r round(summary(pca_res)$importance[2,1]*100, 2)` y `r round(summary(pca_res)$importance[2,2]*100, 2)`, respectivamente. -->
-
-<!-- Observamos un marcado outlier en la PCA, vamos a ver qué pasa: -->
-
-<!-- ```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE} -->
-<!-- expr_dt %>% -->
-<!--   filter(scTrioSeq2Rna_CRC06_LN1_047 != 0) %>% -->
-<!--   ggplot(aes(x = gene, y = scTrioSeq2Rna_CRC06_LN1_047)) + -->
-<!--   geom_point() +  -->
-<!--   geom_hline(yintercept = 15000, col = "red", linetype = "dashed") + -->
-<!--   geom_text(aes(label = case_when( -->
-<!--     scTrioSeq2Rna_CRC06_LN1_047 > 15000 ~ gene, -->
-<!--     TRUE ~ "" -->
-<!--   ), -->
-<!--   vjust = 2, -->
-<!--   hjust = 1)) +  -->
-<!--   theme(axis.text.x = element_text(angle = 90, -->
-<!--                                    size = 2)) -->
-
-<!-- ``` -->
-
-<!-- En el artículo de Ruiz-Ojeda, D. et *al* ([DOI: 10.1080/17520363.2024.2369044](https://doi.org/10.1080/17520363.2024.2369044)), se menciona que una expresión alta del gen **MALAT1** está asociada múltiples tipos de cáncer. En particular, Piórkowska, K. et *al* ([DOI: 10.3390/genes15040479](https://doi.org/10.3390/genes15040479)) describe que, en el contexto del cáncer colorrectal (CRC), MALAT1 estimula la proliferación, la invasión y la migración de las células cancerosas a través de la proteína ancladora de la quinasa PRKA 9 (AKAP‑9), la cual está asociada con la progresión del cáncer y la metástasis (*Yang M.H., Hu Z.Y., Xu C., Xie L.Y., Wang X.Y., Chen S.Y., Li Z.G. MALAT1 promotes colorectal cancer cell proliferation/migration/invasion via PRKA kinase anchor protein 9. Biochim. Biophys. Acta. 2015;1852:166–174. doi: 10.1016/j.bbadis.2014.11.013*). -->
 
 
 
-<!-- Por otro lado, el estudio de Zhang, Z. et *al* ([DOI: 10.1038/s41467-025-66266-x](https://doi.org/10.1038/s41467-025-66266-x)) describe que el long non‑coding RNA UGDH‑AS1, presente en un subtipo específico de células NK infiltradas en tumores de mama triple negativo (TNBC), sí codifica un micropéptido funcional, llamado *NKSM*, que: -->
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+expr_dt %>%
+  filter(scTrioSeq2Rna_CRC06_LN1_047 != 0) %>%
+  ggplot(aes(x = gene, y = scTrioSeq2Rna_CRC06_LN1_047)) +
+  geom_point() +
+  geom_hline(yintercept = 15000, col = "red", linetype = "dashed") +
+  geom_text(aes(label = case_when(
+    scTrioSeq2Rna_CRC06_LN1_047 > 15000 ~ gene,
+    TRUE ~ ""
+  ),
+  vjust = 2,
+  hjust = 1)) +
+  theme(axis.text.x = element_text(angle = 90,
+                                   size = 2))
+
+```
+
+En el artículo de Ruiz-Ojeda, D. et *al* ([DOI: 10.1080/17520363.2024.2369044](https://doi.org/10.1080/17520363.2024.2369044)), se menciona que una expresión alta del gen **MALAT1** está asociada múltiples tipos de cáncer. En particular, Piórkowska, K. et *al* ([DOI: 10.3390/genes15040479](https://doi.org/10.3390/genes15040479)) describe que, en el contexto del cáncer colorrectal (CRC), MALAT1 estimula la proliferación, la invasión y la migración de las células cancerosas a través de la proteína ancladora de la quinasa PRKA 9 (AKAP‑9), la cual está asociada con la progresión del cáncer y la metástasis (*Yang M.H., Hu Z.Y., Xu C., Xie L.Y., Wang X.Y., Chen S.Y., Li Z.G. MALAT1 promotes colorectal cancer cell proliferation/migration/invasion via PRKA kinase anchor protein 9. Biochim. Biophys. Acta. 2015;1852:166–174. doi: 10.1016/j.bbadis.2014.11.013*).
 
 
-<!-- - Desactiva las células NK (reduce IFN‑γ, granzima B, perforina, CD107a). -->
 
-<!-- - Favorece el crecimiento tumoral y la metástasis. -->
-
-<!-- - Es inducido por la vía de TGF‑β en el microambiente tumoral. -->
-
-<!-- - Actúa uniéndose a c‑Myc, impidiendo su fosforilación en Ser62, reduciendo su estabilidad y alterando la expresión de T‑bet, un regulador clave de la función NK. -->
+Por otro lado, el estudio de Zhang, Z. et *al* ([DOI: 10.1038/s41467-025-66266-x](https://doi.org/10.1038/s41467-025-66266-x)) describe que el long non‑coding RNA UGDH‑AS1, presente en un subtipo específico de células NK infiltradas en tumores de mama triple negativo (TNBC), sí codifica un micropéptido funcional, llamado *NKSM*, que:
 
 
-<!-- Ambos genes se muestran sobreexpresados por encima de los demás, lo que puede destacar para una metástasis especialmente agresiva. -->
+- Desactiva las células NK (reduce IFN‑γ, granzima B, perforina, CD107a).
+
+- Favorece el crecimiento tumoral y la metástasis.
+
+- Es inducido por la vía de TGF‑β en el microambiente tumoral.
+
+- Actúa uniéndose a c‑Myc, impidiendo su fosforilación en Ser62, reduciendo su estabilidad y alterando la expresión de T‑bet, un regulador clave de la función NK.
 
 
-<!-- Sin embargo, esta sobreexpresión no nos permite evaluar la estructura de los datos correctamente. Por ello, se procede a eliminar esta muestra. -->
+Ambos genes se muestran sobreexpresados por encima de los demás, lo que puede destacar para una metástasis especialmente agresiva.
 
 
-<!-- ```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE} -->
-<!-- expr_dt2 <- expr_dt %>% select(-scTrioSeq2Rna_CRC06_LN1_047) -->
-<!-- metaData2 <- metaData %>% filter(sample != "scTrioSeq2Rna_CRC06_LN1_047") -->
-<!-- mat2 <- expr_dt2 %>% tibble::column_to_rownames("gene") %>% t -->
-<!-- mat2 <- mat2[,apply(mat2, 2, sd) != 0] -->
-<!-- mat2_norm_log1p <- log1p(mat2) -->
-<!-- ``` -->
-
-<!-- Y ahora procedemos a realizar nuevamente la PCA: -->
+Sin embargo, esta sobreexpresión no nos permite evaluar la estructura de los datos correctamente. Por ello, se procede a eliminar esta muestra.
 
 
-<!-- ```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE} -->
-<!-- pca_res2 <- prcomp(mat2, -->
-<!--                   scale. = T) -->
-<!-- pca_df2 <- data.frame(pca_res2$x, metaData2) -->
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+metaData2 <- metaData %>% filter(sample != "scTrioSeq2Rna_CRC06_LN1_047")
+mat_norm_log1p_tot_filt <-   expr_dt %>% 
+  select(-scTrioSeq2Rna_CRC06_LN1_047) %>% 
+  tibble::column_to_rownames("gene") %>% 
+  t %>%
+  log1p
+hvg_idx2 <- mixhvg::FindVariableFeaturesMix(t(mat_norm_log1p_tot_filt))
+mat_norm_log1p_filt <- mat_norm_log1p_tot_filt[,hvg_idx2]
+```
 
-<!-- ggplot(data = pca_df2, -->
-<!--        aes( -->
-<!--          x = PC1, -->
-<!--          y = PC2, -->
-<!--          shape = region_long, -->
-<!--          color = patient -->
-<!--        )) + -->
-<!--   geom_point() + -->
-<!--   labs(title = "Principal Component Analysis (PCA)", -->
-<!--        x = paste0("PC1 (", round(summary(pca_res2)$importance[2,1]*100, 2), "%)"), -->
-<!--        y = paste0("PC2 (", round(summary(pca_res2)$importance[2,2]*100, 2), "%)")) + -->
-<!--   theme_minimal() +  -->
-<!--   geom_text(aes(label = case_when( -->
-<!--     PC1 > 60 ~ sample, -->
-<!--     TRUE ~ "" -->
-<!--   )), -->
-<!--   vjust = 2, -->
-<!--   hjust = 1) -->
-
-<!-- ``` -->
-
-<!-- Se aprecia que no existen grupos bien delimitados en las dos primeras componentes, con una varianza acumulada de `r round(sum(summary(pca_res2)$importance[2,1:2]*100),2)`%. -->
-
-<!-- Además, vemos dos nuevos posibles outliers: -->
-
-<!-- ```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE} -->
-<!-- expr_dt %>% -->
-<!--     filter(scTrioSeq2Rna_CRC11_PT4_709 != 0) %>% -->
-<!--     ggplot(aes(x = gene, y = scTrioSeq2Rna_CRC11_PT4_709)) + -->
-<!--     geom_point() +  -->
-<!--     geom_hline(yintercept = 15000, col = "red", linetype = "dashed") + -->
-<!--     geom_text(aes(label = case_when( -->
-<!--         scTrioSeq2Rna_CRC11_PT4_709 > 15000 ~ gene, -->
-<!--         TRUE ~ "" -->
-<!--     ), -->
-<!--     vjust = 2, -->
-<!--     hjust = 1)) +  -->
-<!--     theme(axis.text.x = element_text(angle = 90, -->
-<!--                                      size = 2)) -->
+Y ahora procedemos a realizar nuevamente la PCA:
 
 
-<!-- expr_dt %>% -->
-<!--     filter(scTrioSeq2Rna_CRC03_PT1_116 != 0) %>% -->
-<!--     ggplot(aes(x = gene, y = scTrioSeq2Rna_CRC03_PT1_116)) + -->
-<!--     geom_point() +  -->
-<!--     geom_hline(yintercept = 15000, col = "red", linetype = "dashed") + -->
-<!--     geom_text(aes(label = case_when( -->
-<!--         scTrioSeq2Rna_CRC03_PT1_116 > 15000 ~ gene, -->
-<!--         TRUE ~ "" -->
-<!--     ), -->
-<!--     vjust = 2, -->
-<!--     hjust = 1)) +  -->
-<!--     theme(axis.text.x = element_text(angle = 90, -->
-<!--                                      size = 2)) -->
-<!-- ``` -->
-<!-- En ambos vemos nuevamente una sobreexpresión de **MALAT1**. -->
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+pca_res2 <- prcomp(mat_norm_log1p_filt,
+                  scale. = T)
+pca_df2 <- data.frame(pca_res2$x, metaData2)
 
+ggplot(data = pca_df2,
+       aes(
+         x = PC1,
+         y = PC2,
+         shape = region_long,
+         color = patient
+       )) +
+  geom_point() +
+  labs(title = "Principal Component Analysis (PCA)",
+       x = paste0("PC1 (", round(summary(pca_res2)$importance[2,1]*100, 2), "%)"),
+       y = paste0("PC2 (", round(summary(pca_res2)$importance[2,2]*100, 2), "%)")) +
+  theme_minimal() 
+```
 
-<!-- En particular, vemos que susodichos pacientes (*CRC06*, *CRC03* y *CRC11*) corresponden a: -->
-
-<!-- ```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE} -->
-<!-- popData %>% -->
-<!--   filter(Patient.ID %in% c("CRC06", "CRC03", "CRC11")) %>% -->
-<!--   gt::gt() %>% -->
-<!--   gt::tab_header(title = "Datos clínicos de los pacientes outlier") -->
-<!-- ``` -->
-
-<!-- Sin embargo, no existen datos del progreso de la enfermedad, por lo que esta agresividad no puede estudiarse en el presente proyecto. -->
-
-
+Se aprecia que no existen grupos bien delimitados en las dos primeras componentes, con una varianza acumulada de `r round(sum(summary(pca_res2)$importance[2,1:2]*100),2)`%.
 
 ## t-SNE
 
@@ -245,10 +225,11 @@ ggplot(data = umap_df,
          shape = region_long,
          color = patient
        )) +
-  geom_point() +
+  geom_point(alpha = 0.5) +
   labs(title = "UMAP: Neighbors: 30, Min Dist: 0.3, Metric: Cosine",
        x = "UMAP 1",
        y = "UMAP 2") +
+  # facet_wrap(~patient) +
   theme_minimal()
 ```
 
@@ -260,7 +241,7 @@ umap_res2 <- umap(pca_res$x[,1:50],
                  min_dist = 0.3,
                  metric = "cosine",
                  n_epochs = 2000)
-umap_df2 <- data.frame(umap_res2$layout, metaData)
+umap_df2 <- data.frame(umap_res$layout, metaData2)
 
 ggplot(data = umap_df2,
        aes(
@@ -285,7 +266,7 @@ umap_res3 <- umap(pca_res$x[,1:50],
                  min_dist = 0.4,
                  metric = "cosine",
                  n_epochs = 2000)
-umap_df3 <- data.frame(umap_res3$layout, metaData)
+umap_df3 <- data.frame(umap_res3$layout, metaData2)
 
 ggplot(data = umap_df3,
        aes(
@@ -306,17 +287,9 @@ ggplot(data = umap_df3,
 
 Se probarám distintas técnicsas de clustering, como K-means, DBSCAN o HDBSCAN, para evaluar si existen grupos de células con características similares. Sin embargo, dada la alta dimensionalidad de los datos, es posible que estas técnicas no sean capaces de identificar clusters significativos sin una reducción de dimensionalidad previa.
 
-```{r kmeans, message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-set.seed(123)
-for(k in c(5:35)){
-  knn_res <- kmeans(pca_res$x, centers = k, iter.max = 15)
-  print(paste("K:", k, " - Tot. withinss:", knn_res$tot.withinss))
-}
-
-```
 
 ```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-umap_xy <- umap_res3$layout
+umap_xy <- umap_res2$layout
 pc_mat <- pca_res$x[,1:50]
 ```
 
@@ -326,7 +299,7 @@ library(proxy)
 # distancias útiles
 # dist_euclid <- dist(pc_mat)
 dist_cosine <- proxy::dist(pc_mat, method = "cosine")
-dist_cor <- as.dist(1 - cor(t(pc_mat), method = "pearson"))
+dist_cor <- stats::as.dist(1 - cor(t(pc_mat), method = "pearson"))
 ```
 
 
@@ -475,17 +448,16 @@ Probamos métodos como PLSD-DA, que es una técnica de reducción de dimensional
 ```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
 library(mixOmics)
 clclc <- clusters_cor
-plsda_res <- plsda(mat_norm_log1p,
-                   # metaData$patient, 
-                   clclc,
+plsda_res <- plsda(mat_norm_log1p_filt,
+                   metaData2$region_long,
+                   # clclc,
                    ncomp = 5)
-plsda_df <- data.frame(plsda_res$variates, metaData)
+plsda_df <- data.frame(plsda_res$variates, metaData2)
 ggplot(data = plsda_df,
        aes(x = X.comp1,
            y = X.comp2,
            shape = patient,
-           # color = patient
-           color = as.factor(clclc)
+           color = patient
            )) +
   geom_point(alpha = 0.7) + 
   labs(title = "PLS-DA: Components 1 and 2",
@@ -493,7 +465,7 @@ ggplot(data = plsda_df,
        y = "PLS-DA Component 2")
 
 plotIndiv(plsda_res, comp = c(1,2),
-          group = as.factor(clclc), 
+          group = as.factor(metaData2$region_long), 
           legend = TRUE,
           ellipse = TRUE,
           title = "PLS-DA")
@@ -507,232 +479,39 @@ Otros métodos de reducción de variables supervisadas como sPLS-DA, que es una 
 Lo probamos a continuación:
 
 ```{r}
-clclc <- clusters_hdb
 splsda_res <- splsda(mat_norm_log1p,
-                     clclc, 
+                     metaData$region_long, 
                      ncomp = 5,
                      keepX = c(50, 50, 50, 50, 50))
 splsda_df <- data.frame(splsda_res$variates, metaData)
 ggplot(data = splsda_df,
        aes(x = X.comp1,
-           y = X.comp2,
+           y = X.comp3,
            shape = region_long,
-           color = as.factor(clclc))) +
+           color = region_long)) +
   geom_point(alpha = 0.7) + 
-  stat_ellipse(level = 0.95) +
+  stat_ellipse(level = 0.95,
+               show.legend = F) +
   scale_color_brewer(palette = "Dark2") +
-  labs(title = "sPLS-DA: Components 1 and 2",
+  labs(title = "sPLS-DA: Components 1 and 3",
        x = "sPLS-DA Component 1",
-       y = "sPLS-DA Component 2")
+       y = "sPLS-DA Component 3")
 
-plotIndiv(splsda_res, comp = c(1,2),
-          group = as.factor(clclc), 
+plotIndiv(splsda_res, 
+          comp = c(1,3),
+          group = metaData$region_long, 
           legend = TRUE,
           ellipse = TRUE,
           title = "sPLS-DA")
-```
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE, fig.height=20}
-clus <- list(
-  hdbscan = clusters_hdb,
-  louvain = clusters_louvain,
-  cor_hclust = clusters_cor,
-  cosine_hclust = clusters_cos,
-  patient = metaData$patient,
-  region = metaData$region_long
-)
-list_plsda_plot <- list()
-for(n in names(clus)){
-  c <- clus[[n]]
-  plsda_it <- plsda(mat_norm_log1p,
-                    c,
-                    ncomp = 5)
-  list_plsda_plot[[n]] <- plotIndiv(plsda_it,
-            comp = c(1,2),
-            group = as.factor(c), 
-            legend = TRUE,
-            ellipse = TRUE,
-            title = paste("PLS-DA - Grouping by", n))
-}
 
-(list_plsda_plot[["hdbscan"]]$graph + list_plsda_plot[["louvain"]]$graph) / (list_plsda_plot[["cor_hclust"]]$graph + list_plsda_plot[["cosine_hclust"]]$graph) / (list_plsda_plot[["patient"]]$graph + list_plsda_plot[["region"]]$graph)
+vip_sPLSDA <- vip(splsda_res)
+vip_sPLSDA <- vip_sPLSDA %>% as.data.frame() %>% arrange(desc(comp1))
 
+openxlsx::write.xlsx(vip_sPLSDA,
+                     "../Results/VIP_sPLSDA.xlsx",
+                     rowNames = T)
 
 ```
-
-
-
-
-
-```{r}
-plsda_no_tumor <- as.data.frame(mat_norm_log1p) %>% 
-  filter(metaData$region_long != "Normal_Colon") %>% 
-  plsda(metaData %>% 
-          filter(region_long != "Normal_Colon") %>% 
-          pull(region_long), 
-        ncomp = 5)
-
-plotIndiv(plsda_no_tumor,
-          group = metaData %>% 
-            filter(region_long != "Normal_Colon") %>% 
-            pull(region_long), 
-          comp = c(1,2), 
-          legend = T, 
-          ellipse = T)
-
-vip_no_tumor <- vip(plsda_no_tumor)
-head(vip_no_tumor[order(vip_no_tumor[,1], 
-                        decreasing=T),], 
-     n = 30)
-
-```
-
-
-
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-
-
-
-
-
-
-
-
 
 
 
@@ -743,7 +522,7 @@ head(vip_no_tumor[order(vip_no_tumor[,1],
 library(SingleR)
 ref <- celldex::HumanPrimaryCellAtlasData()
 set.seed(123)
-anot_res <- SingleR(test = expr_dt2 %>% tibble::column_to_rownames(var = "gene"),
+anot_res <- SingleR(test = t(mat2),
                     ref = ref,
                     labels = ref$label.main)
 anot_cell_types <- data.frame(anot_res@rownames,
@@ -753,8 +532,156 @@ anot_cell_types <- data.frame(anot_res@rownames,
 metaData_updated <- metaData2 %>%
   left_join(anot_cell_types,
             by = "sample") 
+```
+
+
+
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
 
 ```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
