@@ -76,7 +76,10 @@ ggplot(data = pca_df,
   geom_point() +
   geom_text(aes(label = lab), 
             hjust = 1, 
-            show.legend = F)
+            show.legend = F) +
+  labs(title = "Principal Component Analysis (PCA)",
+       x = paste0("PC1 (", round(summary(pca_res)$importance[2,1]*100, 2), "%)"),
+       y = paste0("PC2 (", round(summary(pca_res)$importance[2,2]*100, 2), "%)")) 
 ```
 En este caso, las dos primeras componentes explican un porcentaje de varianza `r round(summary(pca_res)$importance[2,1]*100, 2)` y `r round(summary(pca_res)$importance[2,2]*100, 2)`, respectivamente.
 
@@ -225,7 +228,7 @@ ggplot(data = umap_df,
          shape = region_long,
          color = patient
        )) +
-  geom_point(alpha = 0.5) +
+  geom_point(alpha = 0.75) +
   labs(title = "UMAP: Neighbors: 30, Min Dist: 0.3, Metric: Cosine",
        x = "UMAP 1",
        y = "UMAP 2") +
@@ -479,8 +482,8 @@ Otros métodos de reducción de variables supervisadas como sPLS-DA, que es una 
 Lo probamos a continuación:
 
 ```{r}
-splsda_res <- splsda(mat_norm_log1p,
-                     metaData$region_long, 
+splsda_res <- splsda(mat_norm_log1p_filt,
+                     metaData2$region_long, 
                      ncomp = 5,
                      keepX = c(50, 50, 50, 50, 50))
 splsda_df <- data.frame(splsda_res$variates, metaData)
@@ -499,7 +502,7 @@ ggplot(data = splsda_df,
 
 plotIndiv(splsda_res, 
           comp = c(1,3),
-          group = metaData$region_long, 
+          group = metaData2$region_long, 
           legend = TRUE,
           ellipse = TRUE,
           title = "sPLS-DA")
