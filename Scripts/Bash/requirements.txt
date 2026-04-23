@@ -1,0 +1,5 @@
+wget
+STAR
+cutadapt
+gzip
+python3

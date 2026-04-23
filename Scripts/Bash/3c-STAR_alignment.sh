@@ -3,9 +3,9 @@
 THREADS=8
 
 BASE_DIR="$HOME/fgonzaleznun/TFM"
-RAW_DIR="$BASE_DIR/data/FastQ/"
+RAW_DIR="$BASE_DIR/data/trimmed_ej"
 REF_DIR="$BASE_DIR/ref/hg38/star_index_hg38"
-OUT_DIR="$BASE_DIR/results/star/raw_alignment_relaxed"
+OUT_DIR="$BASE_DIR/results/star/raw_alignment_trimmed_SS2"
 
 echo "BASE_DIR: $BASE_DIR"
 echo "RAW_DIR:  $RAW_DIR"
@@ -21,10 +21,10 @@ echo "Buscando muestras SRR..."
 
 shopt -s nullglob
 
-for r1 in "$RAW_DIR"/SRR*_1.fastq.gz; do
+for r1 in "$RAW_DIR"/SRR*_1.trim.fastq.gz; do
 
-    base=$(basename "$r1" _1.fastq.gz)
-    r2="$RAW_DIR/${base}_2.fastq.gz"
+    base=$(basename "$r1" _1.trim.fastq.gz)
+    r2="$RAW_DIR/${base}_2.trim.fastq.gz"
 
     sample_out="$OUT_DIR/$base"
     mkdir -p "$sample_out"
