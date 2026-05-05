@@ -1,0 +1,251 @@
+---
+title: "Fase 0 - QC y procesado inicial"
+author: "Francisco Manuel González Nuño"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+library(dplyr)
+library(tidyr)
+library(scuttle)
+library(scater)
+library(SingleCellExperiment)
+library(patchwork)
+library(harmony)
+```
+
+
+# Cargamos la matriz unstranded y el diccionario GeneID - GeneSymbol
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+matrix <- read.delim("../Datos/matrix/counts_matrix_unstranded.tsv")
+metaData <- readRDS("../Datos/MetaData.rds") %>%
+  filter(SRA %in% colnames(matrix)[-1])
+
+gtf <- rtracklayer::import("../Datos/genes_ann.gtf.gz")
+
+gene_annot <- as.data.frame(gtf) %>%
+  filter(type == "gene") %>%
+  select(gene_id, gene_name, gene_type) %>%
+  distinct()
+
+rm(gtf)
+```
+
+Ahora unimos la matriz de conteo con los datos de anotación:
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+gene_annot %>%
+  filter(gene_id %in% matrix$gene) %>%
+  select(-gene_type) %>%
+  right_join(matrix, by = c("gene_id" = "gene")) -> matrix_anot
+```
+
+Cambiamos el nombre de las columnas del código SRA al nombre de muestra
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+dSample_SRA <- setNames(metaData$sample, metaData$SRA)
+colnames(matrix_anot)[-(1:2)] <- dSample_SRA[colnames(matrix_anot)[-(1:2)]]
+```
+
+Creamos objeto SingleCellExperiment:
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+rownames(metaData) <- metaData$sample
+
+sce <- SingleCellExperiment(
+  assays = list(counts = as.matrix(matrix_anot %>% 
+                                     select(-gene_id, -gene_name))),
+  rowData = matrix_anot %>% 
+              select(gene_id, gene_name)
+)
+rownames(sce) <- rowData(sce)$gene_id
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+
+# QC de la matriz de conteo
+
+Para ello, usaremos 'isOutlier' del paquete 'scuttle' para detectar células con un número anormalmente alto o bajo de genes detectados, o con un porcentaje anormalmente alto de conteos mitocondriales. Estas células podrían ser de baja calidad y podrían afectar negativamente a los análisis posteriores.
+
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+is.mito <- grepl("^MT-", rowData(sce)$gene_name)
+
+
+# creamos diccionario sample - batch
+dSample_batch <- setNames(metaData$Batch, metaData$sample)
+
+#introducimos metada en colData
+colData(sce)$batch <- factor(dSample_batch[colnames(sce)])
+colData(sce)$patient <- metaData$patient[match(colnames(sce), 
+                                               metaData$sample)]
+colData(sce)$region_long <- metaData$region_long[match(colnames(sce), 
+                                                       metaData$sample)]
+colData(sce)$region <- metaData$region[match(colnames(sce), 
+                                             metaData$sample)]
+colData(sce)$Gender <- metaData$Gender[match(colnames(sce), 
+                                             metaData$sample)]
+colData(sce)$Age <- metaData$Age[match(colnames(sce), 
+                                       metaData$sample)]
+colData(sce)$AJCC.Stage <- metaData$AJCC.Stage[match(colnames(sce), 
+                                                     metaData$sample)]
+colData(sce)$Primary.Site <- metaData$Primary.Site[match(colnames(sce), 
+                                                         metaData$sample)]
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+sce <- addPerCellQC(sce, 
+                     subsets = list(mito = is.mito))
+
+# por tamaño de librería
+colData(sce)$outlier_libsize <- isOutlier(
+  sce$sum,
+  type = "both",
+  batch = sce$batch
+  )
+
+sce_outl_sum_batch <- plotColData(
+  sce,
+  x = "batch",
+  y = "sum",
+  colour_by = "outlier_libsize"
+)
+sce_outl_sum_patient <- plotColData(
+  sce,
+  x = "patient",
+  y = "sum",
+  colour_by = "outlier_libsize"
+)
+# por numero de genes detectados
+colData(sce)$outlier_detected <- isOutlier(
+  sce$detected,
+  type = "both",
+  batch = sce$batch
+  )
+
+sce_outl_det_batch <- plotColData(
+  sce,
+  x = "batch",
+  y = "detected",
+  colour_by = "outlier_detected"
+)
+sce_outl_det_patient <- plotColData(
+  sce,
+  x = "patient",
+  y = "detected",
+  colour_by = "outlier_detected"
+)
+
+# por porcentaje de genes mitocondriales
+colData(sce)$outlier_mito <- isOutlier(
+  sce$subsets_mito_percent,
+  type = "higher",
+  batch = sce$batch
+  )
+
+sce_outl_mito_batch <- plotColData(
+  sce,
+  x = "batch",
+  y = "subsets_mito_percent",
+  colour_by = "outlier_mito"
+)
+
+sce_outl_mito_patient <- plotColData(
+  sce,
+  x = "patient",
+  y = "subsets_mito_percent",
+  colour_by = "outlier_mito"
+)
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE, fig.width=12}
+(sce_outl_sum_batch | sce_outl_sum_patient) / 
+  (sce_outl_det_batch | sce_outl_det_patient) / 
+  (sce_outl_mito_batch | sce_outl_mito_patient)
+```
+
+
+En total son `r sum(colData(sce)$outlier_libsize | colData(sce)$outlier_detected | colData(sce)$outlier_mito)` células que se consideran de baja calidad y se eliminarán de los análisis posteriores. Esto hace que nuestro dataset conste de un total de `r ncol(sce) - sum(colData(sce)$outlier_libsize | colData(sce)$outlier_detected | colData(sce)$outlier_mito)` células.
+
+
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+sce$discard <- colData(sce)$outlier_libsize | 
+  colData(sce)$outlier_detected | 
+  colData(sce)$outlier_mito
+sce_qc <- sce[, !colData(sce)$discard]
+```
+
+```{r}
+saveRDS(sce_qc,
+        "../Datos/sce_raw.rds")
+```
+
+# Normalización
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+sce_qc <- logNormCounts(sce_qc)
+```
+
+# Filtrado por HVGs
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+hvg_genes <- scran::getTopHVGs(
+  scran::modelGeneVar(
+               sce_qc,
+               assay.type = "logcounts",
+               block = sce_qc$batch),
+  n = 5000
+)
+sce_qc <- sce_qc[rownames(sce_qc) %in% hvg_genes, ]
+```
+
+# Correción de efecto *batch*
+
+## Visualización
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+sce_qc <- runPCA(sce_qc)
+plotReducedDim(sce_qc, dimred = "PCA", colour_by = "batch") + 
+  labs(title = "PCA - Batch")
+```
+
+Hay un efecto Batch muy pronunciado, se soluciona utilizando métodos de corrección de batch. Vamos a utilizar Harmony para ello.
+
+## Harmony
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+assay(sce_qc, "harmony") <- RunHarmony(
+  assay(sce_qc, "logcounts"),
+  as.data.frame(colData(sce_qc)),
+  vars_use = "batch"
+) %>% t()
+
+sce_qc <- runPCA(sce_qc, 
+                 assay.type = "harmony", 
+                 name = "PCA_harmony")
+plotReducedDim(sce_qc, 
+               dimred = "PCA_harmony", 
+               colour_by = "batch")
+
+sce_qc <- runUMAP(sce_qc, 
+                  assay.type = "harmony", 
+                  name = "UMAP_harmony")
+plotReducedDim(sce_qc, 
+               dimred = "UMAP_harmony", 
+               colour_by = "batch")
+```
+Así finalizamos la fase 0, con un objeto con la matriz de expresión y metadata integrados y curados, lista para los análisis posteriores.
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+saveRDS(sce_qc, "../Datos/sce_qc.rds")
+```

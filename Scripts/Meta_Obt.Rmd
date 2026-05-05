@@ -1,5 +1,5 @@
 ---
-title: "Descarga y preparación de datos"
+title: "Descarga y preparación de metadatos"
 author: "Francisco Manuel González Nuño"
 output: html_document
 ---
@@ -23,7 +23,7 @@ data <- getGEO("GSE97693")$GSE97693_series_matrix.txt.gz
 ```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
 meta <- pData(data)
 meta <- meta %>%
-  filter(grepl("TPM", meta$supplementary_file)) %>%
+  filter(grepl("scTrioSeq2Rna_CRC", meta$supplementary_file)) %>%
   mutate(clean_title = sub(" \\[.*\\]", "", title))
 
 library(tidyr)
@@ -32,6 +32,7 @@ library(stringr)
 metaData <- meta %>%
   select(
     sample = clean_title
+    # relation
   ) %>%
   separate(
     sample,
@@ -41,9 +42,11 @@ metaData <- meta %>%
   ) %>%
   mutate(
     region_long = case_when(
-      str_detect(region, "^PT") ~ "Primary_Tumor",
-      str_detect(region, "^LN") ~ "Lymph_Node_Metastasis",
-      region == "NC" ~ "Normal_Colon"
+      str_detect(region, "^PT") ~ "Tumor Primario",
+      str_detect(region, "^LN") ~ "Metastasis Nodo Linfático",
+      str_detect(region, "^ML") ~ "Metastasis Higado",
+      str_detect(region, "^MP") ~ "Metastasis post-tratamiento",
+      region == "NC" ~ "Colon Normal"
     )
   )
 
@@ -52,83 +55,22 @@ write.table(metaData, "../Datos/MetaData.txt", sep = "\t", row.names = F, quote 
 
 ```
 
-## Expression matrix
+
+```{r}
+metaData <- metaData %>% 
+  mutate(
+    BioSample = sub(".*/", "", relation)
+  ) %>%
+  select(-relation)
 
 
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-library(data.table)
+SRAtable <- read.csv2("../Datos/SraRunTable.csv", sep = ",") %>%
+  select(Run, BioSample) %>%
+  rename(SRA = Run)
 
-files <- list.files("../Datos/GSE97693/TPMs", full.names = TRUE)
+metaSRA <- metaData %>%
+  merge(SRAtable, by = "BioSample")
 
-dt_long <- rbindlist(lapply(files, function(f) {
-  dt <- fread(f, header = FALSE)
-  dt[, sample := tools::file_path_sans_ext(basename(f))]
-  setnames(dt, c("gene", "TPM", "sample"))
-  return(dt)
-}))
-
-expr_dt <- dcast(dt_long, gene ~ sample, value.var = "TPM") %>% as.data.frame
-names(expr_dt) <- gsub("^GSM[0-9]+_|\\.TPM$", "", names(expr_dt))
-colnames(expr_dt) <- sub(
-  "scTrioSeq2Rna_scTrioSeq2Rna_",
-  "scTrioSeq2Rna_",
-  colnames(expr_dt)
-)
-
-saveRDS(expr_dt, "../Datos/Expr_Mat.rds")
-write.table(expr_dt, "../Datos/Expr_Mat.txt", sep = "\t", row.names = FALSE, quote = FALSE)
+write.table(metaSRA, "../Datos/metaSRA.txt")
 ```
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 

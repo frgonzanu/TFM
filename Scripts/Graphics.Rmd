@@ -1,0 +1,132 @@
+---
+title: "Gráficas TFM"
+output: html_notebook
+---
+
+# Gráficas
+
+```{r}
+library(ggplot2)
+library(viridis)
+library(ggsci)
+library(paletteer)
+```
+
+## Material y métodos
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+ggplot(data = metaSRA,
+       aes(x = patient,
+           fill = region_long)) + 
+  geom_bar(position = 'dodge') + 
+  labs(x = "Paciente",
+       y = "Número de muestras",
+       fill = "Región") +
+  scale_fill_d3("category20c") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) 
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+ggplot(data = metaData,
+       aes(
+         x = "",
+         y = region_long,
+         fill = region_long
+       )) +
+  geom_bar(stat = 'identity',
+           width = 1) +
+  coord_polar(theta = "y") +
+  scale_fill_paletteer_d("ggsci::nrc_npg") +
+  labs(fill = "Región") +
+  theme_void()
+```
+
+
+
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+ggplot(data = popData2,
+       aes(x = "",
+           fill = Gender)) + 
+  geom_bar(stat = 'count',
+           width = 1,
+           color = 'white') + 
+  coord_polar(theta = "y") +
+  theme_void()
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+ggplot(data = popData2 %>%
+         mutate(
+           Age = case_when(
+             Age < 30 ~ "<30",
+             Age >= 30 & Age < 50 ~ "30-49",
+             Age >= 50 & Age < 60 ~ "50-59",
+             Age >= 60 & Age < 70 ~ "60-69",
+             Age > 70             ~ ">=70"
+           )
+         ),
+       aes(x = Age,
+           fill = Age)) +
+  geom_bar(alpha = 0.5, 
+           width = 0.5) +
+  # geom_density(fill = "steelblue", alpha = 0.4) +
+  labs(x = "Edad",
+       y = "Densidad") +
+  theme_bw()
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+summary(popData2)
+```
+
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+

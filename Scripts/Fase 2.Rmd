@@ -1,0 +1,664 @@
+---
+title: "Fase 2 - Pseudobulk y expresión diferencial"
+author: "Francisco Manuel González Nuño"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+library(dplyr)
+library(ggplot2)
+library(ggrepel)
+library(SingleCellExperiment)
+library(scater)
+library(scuttle)
+library(edgeR)
+
+conflicted::conflict_prefer("select", "dplyr")
+conflicted::conflict_prefer("filter", "dplyr")
+conflicted::conflict_prefer("rename", "dplyr")
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+sce_raw <- readRDS("../Datos/sce_raw.rds")
+```
+
+# Pseudo-Bulk
+Nos interesa hacer agreación por paciente y tejido.
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+sce_raw$pb_ids <- paste(sce_raw$patient,
+                    sce_raw$region_long,
+                    sep = "_")
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+pb <- aggregateAcrossCells(
+  sce_raw,
+  ids = sce_raw$pb_ids,
+  use.assay.type = "counts"
+)
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+pb <- pb[, pb$region_long != "Metastasis post-tratamiento"]
+pb$patient <- factor(pb$patient)
+pb$patient <- droplevels(pb$patient)
+pb$region_long <- factor(pb$region_long)
+pb$region_long <- droplevels(pb$region_long)
+pb$region_long <- relevel(factor(pb$region_long), ref = "Tumor Primario")
+
+```
+
+# Análisis diferencial
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+y <- DGEList(counts = assay(pb, "counts"))
+```
+
+## Filtrado de genes
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+keep <- filterByExpr(y, 
+                     group = pb$region_long)
+y <- y[keep, , keep.lib.sizes = F]
+```
+
+## Normalización
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+y <- calcNormFactors(y)
+```
+
+## Diseño
+
+Al poner la fórmula `~ patient`, esto debe recoger el *batch* debido a que éste está fuertemente asociado a pacientes (TAN = CRC01 y CRC02).
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+design <- model.matrix(~ patient + region_long, 
+                       data = colData(pb))
+```
+
+## Ajuste del modelo
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+y <- estimateDisp(y, 
+                  design)
+
+fit <- glmQLFit(y, 
+                design)
+```
+
+## Cálculo de expresión diferencial
+
+### Extracción de coeficientes
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+coef_regions <- grep("^region_long", 
+                     colnames(design),
+                     value = T)
+```
+
+### Iteración sobre coeficientes
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+all_result <- list()
+
+for(coef_name in coef_regions){
+  res <- glmQLFTest(fit, 
+                    coef = coef_name)
+  tab <-  topTags(res,
+                  n = Inf)$table
+  
+  region_name <- sub("^region_long",
+                     "",
+                     coef_name)
+  tab$gene_id <- rownames(tab)
+  
+  tab <- tab[, c("gene_id", "logFC", "logCPM", "F", "PValue", "FDR")]
+  
+  colnames(tab)[2:6] <- paste0(
+    c("logFC_", "logCPM_", "F_", "pvalue_", "FDR_"),
+    gsub(" ", "", region_name),
+    "_vs_TumorPrimario"
+  )
+  
+  all_result[[region_name]] <- tab
+}
+
+de_merged <- purrr::reduce(all_result,
+                           full_join,
+                           by = "gene_id")
+de_merged <- de_merged %>%
+  mutate(
+    gene_name = rowData(pb)$gene_name[match(de_merged$gene_id,
+                                                   rownames(pb))]
+    ) %>%
+  select(1, gene_name, everything()) %>%
+  filter(logCPM_ColonNormal_vs_TumorPrimario > 1 | 
+           logCPM_MetastasisHigado_vs_TumorPrimario > 1 | 
+           logCPM_MetastasisNodoLinfático_vs_TumorPrimario > 1)
+write.csv(de_merged, "../Results/DEG_all_comparisons.csv")
+```
+
+
+# Identificación de genes potenciales para firma metastásica
+
+## Metástasis de nodo linfático vs. Tumor primario
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+MNL <- de_merged %>%
+  select(gene_id, gene_name, contains("Nodo")) %>%
+  rename(
+    logFC = logFC_MetastasisNodoLinfático_vs_TumorPrimario,
+    logCPM = logCPM_MetastasisNodoLinfático_vs_TumorPrimario,
+    'F-statistic' = F_MetastasisNodoLinfático_vs_TumorPrimario,
+    pvalue = pvalue_MetastasisNodoLinfático_vs_TumorPrimario,
+    FDR = FDR_MetastasisNodoLinfático_vs_TumorPrimario
+  ) %>%
+  mutate(
+    log10FDR = -log10(FDR),
+    log10pvalue = -log10(pvalue)
+  )
+```
+
+### Volcano plot
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+MNL <- MNL %>%
+  mutate(
+    sig = case_when(
+      logFC > 1 & log10pvalue > -log10(0.05) ~ "UP",
+      logFC < -1 & log10pvalue > -log10(0.05) ~ "DOWN",
+      TRUE ~ "NOT SIG."
+    ),
+    sig = factor(sig, levels = c("UP", "DOWN", "NOT SIG.")),
+    gene_label = ifelse(sig != "NOT SIG.", gene_name, "")
+  )
+
+
+ggplot(MNL, 
+       aes(x = logFC, 
+           y = log10pvalue, 
+           color = sig)) +
+  geom_point() +
+  scale_color_manual(values = c("UP" = "red", 
+                                "DOWN" = "green", 
+                                "NOT SIG." = "grey")) +
+  theme_minimal() + 
+  labs(title = "Volcano Plot: Metástasis Nodo Linfático vs Tumor Primario",
+       x = "log Fold Change",
+       y = "-log10(p-value)") +
+  geom_text_repel(aes(label = gene_label),
+                  size = 3,
+                  max.overlaps = 10,
+                  show.legend = F) +
+  geom_hline(yintercept = -log10(0.05), 
+             linetype = "dashed", 
+             col = "black") +
+  geom_vline(xintercept = c(-1, 1), 
+             linetype = "dashed",
+             col = "black") +
+  theme(legend.title = element_blank())
+  
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+## Metástasis en hígado vs. tumor primario
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+MH <- de_merged %>%
+  select(gene_id, gene_name, contains("Higado")) %>%
+  rename(
+    logFC= logFC_MetastasisHigado_vs_TumorPrimario,
+    logCPM= logCPM_MetastasisHigado_vs_TumorPrimario,
+    'F-statistic'= F_MetastasisHigado_vs_TumorPrimario,
+    pvalue= pvalue_MetastasisHigado_vs_TumorPrimario,
+    FDR= FDR_MetastasisHigado_vs_TumorPrimario
+  ) %>%
+  mutate(
+    log10FDR = -log10(FDR),
+    log10pvalue = -log10(pvalue)
+  )
+```
+
+### Volcano plot
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+MH <- MH %>%
+  mutate(
+    sig = case_when(
+      logFC > 1 & log10pvalue > -log10(0.05) ~ "UP",
+      logFC < -1 & log10pvalue > -log10(0.05) ~ "DOWN",
+      TRUE ~ "NOT SIG."
+    ),
+    sig = factor(sig, levels = c("UP", "DOWN", "NOT SIG.")),
+    gene_label = ifelse(sig != "NOT SIG.", gene_name, "")
+  )
+
+
+ggplot(MH, 
+       aes(x = logFC, 
+           y = log10pvalue, 
+           color = sig)) +
+  geom_point() +
+  scale_color_manual(values = c("UP" = "red", 
+                                "DOWN" = "green", 
+                                "NOT SIG." = "grey")) +
+  theme_minimal() + 
+  labs(title = "Volcano Plot: Metástasis Hepática vs Tumor Primario",
+       x = "log Fold Change",
+       y = "-log10(p-value)") +
+  geom_text_repel(aes(label = gene_label),
+                  size = 3,
+                  max.overlaps = 10,
+                  show.legend = F) +
+  geom_hline(yintercept = -log10(0.05), 
+             linetype = "dashed", 
+             col = "black") +
+  geom_vline(xintercept = c(-1, 1), 
+             linetype = "dashed",
+             col = "black") +
+  theme(legend.title = element_blank())
+  
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+## Colon Normal vs. Tumpor Primario
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+CN <- de_merged %>%
+  select(gene_id, gene_name, contains("Colon")) %>%
+  rename(
+    logFC= logFC_ColonNormal_vs_TumorPrimario,
+    logCPM= logCPM_ColonNormal_vs_TumorPrimario,
+    'F-statistic'= F_ColonNormal_vs_TumorPrimario,
+    pvalue= pvalue_ColonNormal_vs_TumorPrimario,
+    FDR= FDR_ColonNormal_vs_TumorPrimario
+  ) %>%
+  mutate(
+    log10FDR = -log10(FDR),
+    log10pvalue = -log10(pvalue)
+  )
+```
+
+### Volcano plot
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+CN <- CN %>%
+  mutate(
+    sig = case_when(
+      logFC > 1 & log10pvalue > -log10(0.05) ~ "UP",
+      logFC < -1 & log10pvalue > -log10(0.05) ~ "DOWN",
+      TRUE ~ "NOT SIG."
+    ),
+    sig = factor(sig, levels = c("UP", "DOWN", "NOT SIG.")),
+    gene_label = ifelse(sig != "NOT SIG.", gene_name, "")
+  )
+
+
+ggplot(CN, 
+       aes(x = logFC, 
+           y = log10pvalue, 
+           color = sig)) +
+  geom_point() +
+  scale_color_manual(values = c("UP" = "red", 
+                                "DOWN" = "green", 
+                                "NOT SIG." = "grey")) +
+  theme_minimal() + 
+  labs(title = "Volcano Plot: Colon Normal vs Tumor Primario",
+       x = "log Fold Change",
+       y = "-log10(p-value)") +
+  geom_text_repel(aes(label = gene_label),
+                  size = 3,
+                  max.overlaps = 10,
+                  show.legend = F) +
+  geom_hline(yintercept = -log10(0.05), 
+             linetype = "dashed", 
+             col = "black") +
+  geom_vline(xintercept = c(-1, 1), 
+             linetype = "dashed",
+             col = "black") +
+  theme(legend.title = element_blank())
+  
+```
+
+
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+## Genes candidatos metástasis vs tumor primario
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+candidates <- merge(
+  MNL %>% 
+    filter(pvalue < 0.05) %>% 
+    select(gene_id, gene_name, logFC, FDR, pvalue) %>%
+    rename(
+      logFC_MNL = logFC,
+      FDR_MNL = FDR,
+      pvalue_MNL = pvalue
+    ),
+  MH %>%
+    filter(pvalue < 0.05) %>% 
+    select(gene_id, gene_name, logFC, FDR, pvalue) %>%
+    rename(
+      logFC_MH = logFC,
+      FDR_MH = FDR,
+      pvalue_MH = pvalue
+    ),
+  by = c("gene_id", "gene_name")
+) %>%
+  mutate(
+    'UP/DOWN' = case_when(
+      logFC_MNL > 1 & logFC_MH > 1 ~ "UP in both",
+      logFC_MNL < -1 & logFC_MH < -1 ~ "DOWN in both",
+      TRUE ~ "Other"
+    ),
+    labels = ifelse(`UP/DOWN` != "Other", gene_name, "")
+    )
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+ggplot(candidates,
+       aes(
+         x = logFC_MNL,
+         y = logFC_MH,
+         color = `UP/DOWN`
+       )) +
+  geom_point() +
+  scale_color_manual(values = c("UP in both" = "red",
+                                "DOWN in both" = "green",
+                                "Other" = "grey")) +
+  geom_hline(yintercept = 0, 
+             linetype = "dashed", 
+             col = "black") +
+  geom_vline(xintercept = 0,
+             linetype = "dashed",
+             col = 'black') + 
+  geom_hline(yintercept = c(-1,1), 
+             linetype = "dotted", 
+             col = "red") +
+  geom_vline(xintercept = c(-1,1),
+             linetype = "dotted",
+             col = 'red') + 
+  labs(title = "Comparación de logFC entre MNL y MH",
+       x = "logFC Metástasis Nodo Linfático vs Tumor Primario",
+       y = "logFC Metástasis Hepática vs Tumor Primario") +
+  theme(legend.title = element_blank()) + 
+  geom_text_repel(aes(label = labels),
+                  size = 3,
+                  max.overlaps = 10,
+                  show.legend = F)
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+candidates_list <- candidates %>%
+  filter(labels != "") %>%
+  pull(labels)
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+

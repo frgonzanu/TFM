@@ -1,0 +1,323 @@
+---
+title: "Fase 1 - Caracterización de la arquitectura"
+author: "Francisco Manuel González Nuño"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+library(dplyr)
+library(ggplot2)
+library(SingleCellExperiment)
+library(scater)
+library(scuttle)
+library(monocle)
+library(SingleR)
+
+conflicted::conflict_prefer("select", "dplyr")
+conflicted::conflict_prefer("filter", "dplyr")
+conflicted::conflict_prefer("rename", "dplyr")
+```
+
+
+# Carga de datos
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+readRDS("../Datos/sce_qc.rds") -> sce
+rownames(sce) <- rowData(sce)$gene_name
+```
+
+
+
+# Exploración de datos - reducción de dimensionalidad
+
+
+
+## PCA
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+plotReducedDim(sce,
+               dimred = "PCA_harmony",
+               colour_by = "region_long") +
+  labs(title = "Principal Component Analysis (PCA)") +
+  guides(colour = guide_legend(title = "Region"))
+```
+
+
+## t-SNE
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+sce <- runTSNE(sce, 
+               dimred = "PCA_harmony",
+               # ncomponents = 2, 
+               perplexity = 30)
+               # max_iter = 2000)
+plotReducedDim(sce,
+               dimred = "TSNE",
+               colour_by = "region_long") +
+  labs(title = "t-SNE with PCA components") +
+  guides(colour = guide_legend(title = "Region"))
+
+```
+
+
+
+## UMAP
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+set.seed(123)
+sce <- runUMAP(sce,
+               dimred = "PCA_harmony",
+               n_neighbors = 30,
+               min_dist = 0.15,
+               metric = "cosine",
+               # metric = "correlation",
+               n_epochs = 2000
+               )
+plotReducedDim(sce,
+               dimred = "UMAP",
+               colour_by = "region_long") +
+  labs(title = "UMAP with PCA components") +
+  guides(colour = guide_legend(title = "Region"))
+```
+
+## Anotación celular
+
+Mediante métodos automáticos (como SingleR), se pueden asignar etiquetas de tipo celular a cada célula basándose en la expresión génica y comparándola con referencias de tipos celulares conocidos. Esto podría ayudar a identificar qué tipos celulares están presentes en cada región anatómica y cómo se distribuyen. Si bien es cierto que los métodos automáticos pueden no ser perfectos.
+
+```{r}
+library(Matrix)
+
+# 1. expresión
+mat <- readMM("../Datos/CRC sc ref/matrix.mtx")
+dim(mat) # si es de 371223 genes, borrar punto 3
+
+genes <- read.delim("../Datos/CRC sc ref/matrix.genes.tsv", header = FALSE)
+barcodes <- read.delim("../Datos/CRC sc ref/matrix.barcodes.tsv", header = FALSE)
+
+rownames(mat) <- make.unique(genes$V2)
+colnames(mat) <- barcodes$V1
+
+# 2. tSNE + labels
+tsne <- read.delim("../Datos/CRC sc ref/crc10x_tSNE_cl_global.tsv", header = TRUE)
+tsne <- tsne[tsne$NAME != "TYPE", ]
+rownames(tsne) <- tsne$NAME
+
+# 3. alinear
+common <- base::intersect(colnames(mat), rownames(tsne))
+
+mat <- mat[, common]
+tsne <- tsne[common, ]
+
+# 4. construir referencia
+
+
+ref_crc <- SingleCellExperiment(
+  assays = list(logcounts = mat),
+  colData = tsne
+)
+
+c_genes <- base::intersect(rownames(ref_crc),
+                           rownames(sce))
+ref_crc <- ref_crc[c_genes,]
+
+
+
+ref_pb <- aggregateAcrossCells(
+  ref_crc,
+  ids = ref_crc$ClusterFull,
+  use.assay.type = "logcounts"
+)
+```
+
+
+```{r}
+pred_crc <- SingleR(
+  test = sce,
+  ref = ref_pb,
+  labels = colnames(ref_pb),
+  assay.type.test = "logcounts",
+  assay.type.ref = "logcounts"
+)
+
+sce$SR_CRC <- pred_crc$pruned.labels
+
+
+plotReducedDim(sce[, !is.na(sce$SR_CRC)],
+               dimred = "UMAP",
+               colour_by = "SR_CRC") +
+  labs(title = "UMAP with SingleR CRC annotations") +
+  guides(colour = guide_legend(title = "SingleR CRC Annotation"))
+
+```
+
+
+## Proporciones celulares
+
+## Cálculo de proporciones celulares por paciente y tejido
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE, fig.height=8}
+proportions <- as.data.frame(colData(sce)) %>%
+  filter(!is.na(SR_CRC)) %>%
+  group_by(patient, region_long, SR_CRC) %>%
+  summarise(count = n()) %>%
+  group_by(patient, region_long) %>%
+  mutate(proportion = count / sum(count))
+
+ggplot(proportions, 
+       aes(x = region_long, 
+           y = proportion, 
+           fill = SR_CRC)) +
+  geom_bar(stat = "identity", 
+           position = "fill") +
+  labs(title = "Proporción de tipos celulares por región",
+       x = "Localización",
+       y = "Proporción",
+       fill = "Tipo celular") +
+  scale_fill_manual (values = paletteer::paletteer_d("ggsci::category20c_d3")) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE, fig.height=8}
+ggplot(proportions, 
+       aes(x = patient, 
+           y = proportion, 
+           fill = SR_CRC)) +
+  geom_bar(stat = "identity", 
+           position = "fill") +
+  labs(title = "Proporción de tipos celulares por región",
+       x = "Localización",
+       y = "Proporción",
+       fill = "Tipo celular") +
+  scale_fill_manual (values = paletteer::paletteer_d("ggsci::category20c_d3")) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE, fig.width=10}
+ref <- celldex::HumanPrimaryCellAtlasData()
+# ref <- celldex::BlueprintEncodeData()
+# ref <- celldex::MonacoImmuneData()
+set.seed(123)
+sce$SingleR_labels <- SingleR(
+  test = sce,
+  ref = ref,
+  labels = ref$label.main,
+  assay.type.test = "logcounts"
+)
+sce$cellAnnot <- sce$SingleR_labels$labels
+plotReducedDim(sce,
+               dimred = "UMAP",
+               colour_by = "cellAnnot") +
+  labs(title = "UMAP with SingleR annotations") +
+  guides(colour = guide_legend(title = "SingleR Annotation"))
+```
+
+
+
+## Clustering
+
+Se utiliza el algoritmo de clustering Louvain para identificar grupos de células que comparten patrones de expresión génica similares. Esto podría revelar subpoblaciones celulares dentro de cada región anatómica y ayudar a caracterizar la heterogeneidad celular presente en el tumor.
+
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+set.seed(123)
+
+sce$cluster <- factor(
+  igraph::cluster_louvain(
+    scran::buildSNNGraph(
+      sce,
+      use.dimred = "PCA_harmony",
+      k = 20
+    )
+  )$membership
+)
+
+plotReducedDim(sce,
+               dimred = "UMAP",
+               colour_by = "cluster") +
+  labs(title = "UMAP with cluster") +
+  guides(colour = guide_legend(title = "Cluster"))
+
+
+```
+
+
+
+
+### Métodos supervisados
+
+Probamos métodos como PLSD-DA, que es una técnica de reducción de dimensionalidad supervisada que busca encontrar componentes que maximicen la separación entre clases predefinidas. En este caso, se podrían usar las regiones anatómicas como clases para evaluar si existen patrones de expresión génica específicos asociados a cada región.
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+library(mixOmics)
+
+splsda_res <- splsda(t(assay(sce,
+                             "harmony")),
+                   colData(sce)$region_long, 
+                     ncomp = 5,
+                     keepX = c(50, 50, 50, 50, 50))
+splsda_df <- data.frame(splsda_res$variates, colData(sce))
+ggplot(data = splsda_df,
+       aes(x = X.comp1,
+           y = X.comp3,
+           shape = region_long,
+           color = region_long)) +
+  geom_point(alpha = 0.7) + 
+  stat_ellipse(level = 0.95,
+               show.legend = F) +
+  scale_color_brewer(palette = "Dark2") +
+  labs(title = "sPLS-DA: Components 1 and 3",
+       x = "sPLS-DA Component 1",
+       y = "sPLS-DA Component 3")
+```
+
+Se aprecia que el grupo "Metástasis post-tratamiento" se separa claramente del resto de grupos, lo que sugiere que existen patrones de expresión génica específicos asociados a esta región anatómica. Sin embargo, este tipo de tejido pertenece únicamente al paciente CRC01, y los otros grupos no muestran una separación tan clara. Para evaluar mejor la separación entre los grupos, se podría considerar eliminar el grupo "Metástasis post-tratamiento" para mejorar la posible separación del resto de grupos.
+
+```{r}
+splsda_res <- splsda(t(assay(sce[, (colData(sce)$region_long != "Metastasis post-tratamiento" )],
+                             "harmony")),
+                   colData(sce[, (colData(sce)$region_long != "Metastasis post-tratamiento" )])$region_long, 
+                     ncomp = 5,
+                     keepX = c(50, 50, 50, 50, 50))
+splsda_df <- data.frame(splsda_res$variates, colData(sce[, (colData(sce)$region_long != "Metastasis post-tratamiento" )]))
+ggplot(data = splsda_df,
+       aes(x = X.comp1,
+           y = X.comp3,
+           shape = region_long,
+           color = region_long)) +
+  geom_point(alpha = 0.7) + 
+  stat_ellipse(level = 0.95,
+               show.legend = F) +
+  scale_color_brewer(palette = "Dark2") +
+  labs(title = "sPLS-DA: Components 1 and 3",
+       x = "sPLS-DA Component 1",
+       y = "sPLS-DA Component 3")
+
+plotIndiv(splsda_res, 
+          comp = c(1,3),
+          group = colData(sce[, (colData(sce)$region_long != "Metastasis post-tratamiento" )])$region_long, 
+          legend = TRUE,
+          ellipse = TRUE,
+          title = "sPLS-DA")
+
+vip_sPLSDA <- vip(splsda_res)
+vip_sPLSDA <- vip_sPLSDA %>% as.data.frame() %>% arrange(desc(comp1))
+top15_vip_sPLSDA <- vip_sPLSDA %>% head(15)
+
+openxlsx::write.xlsx(vip_sPLSDA,
+                     "../Results/VIP_sPLSDA.xlsx",
+                     rowNames = T)
+
+```
+
+```{r}
+saveRDS(sce, "../Datos/sce_2.rds")
+```
+
+
