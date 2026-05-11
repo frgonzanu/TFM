@@ -10,7 +10,7 @@ Reports/
 >>>>>>> 522c7fbe40b12d0d60efcfde8e99b4d4bd3a02be
 "*.RData"
 "*.rda"
-"*.rds"
 "Datos/CRCx sc ref/"
 "*.RDataTmp"
 .RDataTmp
+.RDataTmp1

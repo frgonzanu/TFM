@@ -44,7 +44,8 @@ pb <- aggregateAcrossCells(
 ```
 
 ```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-pb <- pb[, pb$region_long != "Metastasis post-tratamiento"]
+# pb <- pb[, pb$region_long != "Metastasis post-tratamiento"]
+pb <- pb[, pb$region_long %in% c("Tumor Primario", "Metastasis Nodo Linfático")]
 pb$patient <- factor(pb$patient)
 pb$patient <- droplevels(pb$patient)
 pb$region_long <- factor(pb$region_long)
@@ -63,7 +64,8 @@ y <- DGEList(counts = assay(pb, "counts"))
 
 ```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
 keep <- filterByExpr(y, 
-                     group = pb$region_long)
+                     # group = pb$region_long,
+                     design = design)
 y <- y[keep, , keep.lib.sizes = F]
 ```
 
@@ -87,7 +89,6 @@ design <- model.matrix(~ patient + region_long,
 ```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
 y <- estimateDisp(y, 
                   design)
-
 fit <- glmQLFit(y, 
                 design)
 ```
@@ -138,10 +139,9 @@ de_merged <- de_merged %>%
                                                    rownames(pb))]
     ) %>%
   select(1, gene_name, everything()) %>%
-  filter(logCPM_ColonNormal_vs_TumorPrimario > 1 | 
-           logCPM_MetastasisHigado_vs_TumorPrimario > 1 | 
-           logCPM_MetastasisNodoLinfático_vs_TumorPrimario > 1)
-write.csv(de_merged, "../Results/DEG_all_comparisons.csv")
+  # filter(logCPM_MetastasisHigado_vs_TumorPrimario > 1 | 
+    filter(logCPM_MetastasisNodoLinfático_vs_TumorPrimario > 1)
+write.csv(de_merged, "../Results/DE_genes_all_comparisons.csv")
 ```
 
 
@@ -206,41 +206,6 @@ ggplot(MNL,
   
 ```
 
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
 
 ## Metástasis en hígado vs. tumor primario
 
@@ -301,21 +266,6 @@ ggplot(MH,
   
 ```
 
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
 
 ## Colon Normal vs. Tumpor Primario
 
@@ -378,54 +328,10 @@ ggplot(CN,
 
 
 
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
 ## Genes candidatos metástasis vs tumor primario
 
 ```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-candidates <- merge(
+candidates <- #merge(
   MNL %>% 
     filter(pvalue < 0.05) %>% 
     select(gene_id, gene_name, logFC, FDR, pvalue) %>%
@@ -433,21 +339,23 @@ candidates <- merge(
       logFC_MNL = logFC,
       FDR_MNL = FDR,
       pvalue_MNL = pvalue
-    ),
-  MH %>%
-    filter(pvalue < 0.05) %>% 
-    select(gene_id, gene_name, logFC, FDR, pvalue) %>%
-    rename(
-      logFC_MH = logFC,
-      FDR_MH = FDR,
-      pvalue_MH = pvalue
-    ),
-  by = c("gene_id", "gene_name")
-) %>%
+    ) %>%
+#   MH %>%
+#     filter(pvalue < 0.05) %>% 
+#     select(gene_id, gene_name, logFC, FDR, pvalue) %>%
+#     rename(
+#       logFC_MH = logFC,
+#       FDR_MH = FDR,
+#       pvalue_MH = pvalue
+#     ),
+#   by = c("gene_id", "gene_name")
+# ) %>%
   mutate(
     'UP/DOWN' = case_when(
-      logFC_MNL > 1 & logFC_MH > 1 ~ "UP in both",
-      logFC_MNL < -1 & logFC_MH < -1 ~ "DOWN in both",
+      logFC_MNL > 1 ~ "UP",
+      logFC_MNL < -1 ~ "DOWN",
+      # logFC_MNL > 1 & logFC_MH > 1 ~ "UP in both",
+      # logFC_MNL < -1 & logFC_MH < -1 ~ "DOWN in both",
       TRUE ~ "Other"
     ),
     labels = ifelse(`UP/DOWN` != "Other", gene_name, "")
@@ -491,174 +399,6 @@ ggplot(candidates,
 candidates_list <- candidates %>%
   filter(labels != "") %>%
   pull(labels)
+write.csv(candidates_list, "../Results/genes_candidatos_firma_metastasis.csv", row.names = F, col.names = F)
 ```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
 

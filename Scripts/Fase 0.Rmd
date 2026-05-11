@@ -32,6 +32,7 @@ gene_annot <- as.data.frame(gtf) %>%
   filter(type == "gene") %>%
   select(gene_id, gene_name, gene_type) %>%
   distinct()
+# write.csv(gene_annot, "../Datos/gene_annot.csv", row.names = F)
 
 rm(gtf)
 ```

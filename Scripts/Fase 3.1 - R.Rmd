@@ -1,0 +1,90 @@
+---
+title: "Fase 3 - R Side - DL"
+author: "Francisco Manuel González Nuño"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+library(dplyr)
+library(SingleCellExperiment)
+library(zellkonverter)
+```
+
+
+ 
+# Deep Learning
+
+Dada la potencia que tiene Python sobre R en el ámbito del Deep Learning, se ha decidido realizar esta parte del análisis en Python. Para ello, se ha utilizado el entorno presente en la MV alojada en los servidores de la OUC.
+
+## Exportamos datos
+
+Nos insteresa quedarnos únicamente con las muestras pertenecientes a los tejidos de interés: `Colon Normal` solo tiene 17 células y `Metastasis post-tratamiento` sólo pertenece a un paciente.
+
+
+Cargamos y exportamos la mtriz de genes filtrada por HVGs (5000 genes), pues no es de interés buscar en genes sin variabilidad.
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+sce <- readRDS("../Datos/sce_qc.rds")
+sce <- sce[, sce$region_long %in% c("Tumor Primario", "Metastasis Nodo Linfático")]
+sce <- sce[, !(sce$patient %in% c("CRC01", "CRC02"))]
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+export_path <- "../Datos/ZellKonverter/"
+ZK_file <- "sce_TPNL_scvi_in_5k.h5ad"
+
+zellkonverter::writeH5AD(sce, file.path(export_path, ZK_file))
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+write.csv(colData(sce), "../Datos/ZellKonverter/meta_scvi_in_5k.csv", row.names = TRUE)
+write.csv(rowData(sce), "../Datos/ZellKonverter/row_scvi_in_5k.csv", row.names = TRUE)
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
