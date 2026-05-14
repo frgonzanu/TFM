@@ -115,7 +115,8 @@ design)
 # res_NL_PT <- glmQLFTest(fit,
 #                         coef = "region_longMetastasis Nodo Linfático")
 res_NL_PT <- glmTreat(fit,
-                      coef = "region_longMetastasis Nodo Linfático")
+                      coef = "region_longMetastasis Nodo Linfático",
+                      lfc = log2(1.5))
 tab_NL_PT <- topTags(res_NL_PT,
                         n = Inf)$table %>%
   tibble::rownames_to_column(var = "gene_id")
@@ -135,7 +136,8 @@ fit_CN <- glmQLFit(y,
 
 
 res_PT_CN <- glmTreat(fit_CN,
-                      coef = "region_longTumor Primario")
+                      coef = "region_longTumor Primario",
+                      lfc = log2(1.5))
 # res_PT_CN <- glmQLFTest(fit_CN,
 #                         coef = "region_longTumor Primario")
 tab_PT_CN <- topTags(res_PT_CN,
