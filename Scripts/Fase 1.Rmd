@@ -1,7 +1,18 @@
 ---
 title: "Fase 1 - Caracterización de la arquitectura"
 author: "Francisco Manuel González Nuño"
-output: pdf_document
+output:
+  html_document:
+    toc: true              # tabla de contenidos
+    toc_depth: 2
+    toc_float: true        # TOC flotante
+    number_sections: true  # numerar secciones
+    theme: cosmo           # tema de Bootstrap (cosmo, united, journal, etc.)
+    highlight: tango       # estilo de resaltado de código
+    code_folding: "show"   # "hide", "show", "none"
+    code_download: true    # botón para descargar el código
+    df_print: paged        # impresión de data frames (paged, tibble, default)
+    self_contained: true
 ---
 
 ```{r setup, include=FALSE}
@@ -134,6 +145,7 @@ Mediante métodos automáticos (como SingleR), se pueden asignar etiquetas de ti
 Anotación  con referencia estándar: 
 
 ```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE, fig.width=10}
+
 ref <- celldex::HumanPrimaryCellAtlasData()
 # ref <- celldex::BlueprintEncodeData()
 # ref <- celldex::MonacoImmuneData()
@@ -217,7 +229,7 @@ saveRDS(ref_pb_mid, "../Datos/pb_ref_mid.rds")
 ```
 
 
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE, fig.width=10}}
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE, fig.width=10}
 pred_crc_full <- SingleR(
   test = sce,
   ref = ref_pb_full,
@@ -422,12 +434,12 @@ ggplot(data = splsda_df,
 Se aprecia que el grupo "Metástasis post-tratamiento" se separa claramente del resto de grupos, lo que sugiere que existen patrones de expresión génica específicos asociados a esta región anatómica. Sin embargo, este tipo de tejido pertenece únicamente al paciente CRC01, y los otros grupos no muestran una separación tan clara. Para evaluar mejor la separación entre los grupos, se podría considerar eliminar el grupo "Metástasis post-tratamiento" para mejorar la posible separación del resto de grupos.
 
 ```{r}
-splsda_res <- splsda(t(assay(sce[, (colData(sce)$region_long != "Metastasis post-tratamiento" )],
+splsda_res <- splsda(t(assay(sce[, !(colData(sce)$region_long %in% c("Metastasis post-tratamiento", "Metastasis Higado"))],
                              "harmony")),
-                   colData(sce[, (colData(sce)$region_long != "Metastasis post-tratamiento" )])$region_long, 
+                   colData(sce[, !(colData(sce)$region_long %in% c("Metastasis post-tratamiento", "Metastasis Higado"))])$region_long, 
                      ncomp = 5,
                      keepX = c(50, 50, 50, 50, 50))
-splsda_df <- data.frame(splsda_res$variates, colData(sce[, (colData(sce)$region_long != "Metastasis post-tratamiento" )]))
+splsda_df <- data.frame(splsda_res$variates, colData(sce[, !(colData(sce)$region_long %in% c("Metastasis post-tratamiento", "Metastasis Higado"))]))
 ggplot(data = splsda_df,
        aes(x = X.comp1,
            y = X.comp3,

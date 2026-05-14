@@ -1,7 +1,18 @@
 ---
 title: "Fase 4 - Enriquecimiento funcional"
 author: "Francisco Manuel González Nuño"
-output: html_document
+output:
+  html_document:
+    toc: true              # tabla de contenidos
+    toc_depth: 2
+    toc_float: true        # TOC flotante
+    number_sections: true  # numerar secciones
+    theme: cosmo           # tema de Bootstrap (cosmo, united, journal, etc.)
+    highlight: tango       # estilo de resaltado de código
+    code_folding: "show"   # "hide", "show", "none"
+    code_download: true    # botón para descargar el código
+    df_print: paged        # impresión de data frames (paged, tibble, default)
+    self_contained: true
 ---
 
 ```{r setup, include=FALSE}
@@ -77,7 +88,7 @@ go_bp_NL <- enrichGO(
 clusterProfiler::dotplot(go_bp_NL, showCategory = 20) + ggtitle("GO Biological Process Enrichment")
 ```
 
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+```{r , message=FALSE, include=FALSE, echo=FALSE, warning=FALSE}
 NL_GOBP <- ggplot(go_bp_NL@result %>% 
                     slice_min(pvalue, n = 15) %>% 
                     separate(GeneRatio, 
@@ -100,9 +111,9 @@ NL_GOBP <- ggplot(go_bp_NL@result %>%
   ggtitle("GO Biological Process") +
   scale_color_gradient(low = "steelblue", high = "red")
 
-NL_alluvial <- ggplot(go_bp_NL@result %>%
-                        slice_min(pvalue, n = 15) %>%
-                        )
+# NL_alluvial <- ggplot(go_bp_NL@result %>%
+#                         slice_min(pvalue, n = 15) %>%
+#                         )
 
 
 ```

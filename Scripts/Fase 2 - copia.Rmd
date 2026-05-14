@@ -1,7 +1,18 @@
 ---
 title: "Fase 2 - Pseudobulk y expresión diferencial"
 author: "Francisco Manuel González Nuño"
-output: html_document
+output:
+  html_document:
+    toc: true              # tabla de contenidos
+    toc_depth: 2
+    toc_float: true        # TOC flotante
+    number_sections: true  # numerar secciones
+    theme: cosmo           # tema de Bootstrap (cosmo, united, journal, etc.)
+    highlight: tango       # estilo de resaltado de código
+    code_folding: "show"   # "hide", "show", "none"
+    code_download: true    # botón para descargar el código
+    df_print: paged        # impresión de data frames (paged, tibble, default)
+    self_contained: true
 ---
 
 ```{r setup, include=FALSE}
@@ -157,8 +168,8 @@ MNL <- tab_NL_PT %>%
 MNL <- MNL %>%
   mutate(
     sig = case_when(
-      logFC > 1 & log10FDR > -log10(0.05) ~ "UP",
-      logFC < -1 & log10FDR > -log10(0.05) ~ "DOWN",
+      logFC > 1 & log10pvalue > -log10(0.05) ~ "UP",
+      logFC < -1 & log10pvalue > -log10(0.05) ~ "DOWN",
       TRUE ~ "NOT SIG."
     ),
     sig = factor(sig, levels = c("UP", "DOWN", "NOT SIG.")),
@@ -168,7 +179,7 @@ MNL <- MNL %>%
 
 ggplot(MNL, 
        aes(x = logFC, 
-           y = log10FDR, 
+           y = log10pvalue, 
            color = sig)) +
   geom_point() +
   scale_color_manual(values = c("UP" = "red", 
