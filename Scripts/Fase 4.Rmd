@@ -470,6 +470,6 @@ ReactomePA::dotplot(reactome_res_CN, showCategory = 20
 
 ```
 
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
+```{r}
+sessionInfo()
 ```

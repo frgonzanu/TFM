@@ -44,14 +44,14 @@ pb <- aggregateAcrossCells(
 ```
 
 ```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-# pb <- pb[, pb$region_long != "Metastasis post-tratamiento"]
-pb <- pb[, (!pb$patient %in% c("CRC01", "CRC02"))]
+# pb <- pb[, !(pb$region_long %in% c("Metastasis post-tratamiento"))]
+# pb <- pb[, (!pb$patient %in% c("CRC01", "CRC02"))]
 pb <- pb[, pb$region_long %in% c("Colon Normal", "Tumor Primario", "Metastasis Nodo Linfático")]
 pb$patient <- factor(pb$patient)
 pb$patient <- droplevels(pb$patient)
 pb$region_long <- factor(pb$region_long)
 pb$region_long <- droplevels(pb$region_long)
-pb$region_long <- relevel(factor(pb$region_long), ref = "Tumor Primario")
+pb$region_long <- relevel(pb$region_long, ref = "Tumor Primario")
 
 ```
 
@@ -65,7 +65,9 @@ y <- DGEList(counts = assay(pb, "counts"))
 
 ```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
 keep <- filterByExpr(y, 
-                     group = pb$region_long)
+                     group = pb$region_long,
+                     min.count = 10,
+                     min.total.count = 15)
                      # design = design)
 y <- y[keep, , keep.lib.sizes = F]
 ```
@@ -90,8 +92,8 @@ design <- model.matrix(~ patient + region_long,
 ```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
 y <- estimateDisp(y, 
                   design)
-fit <- glmQLFit(y, 
-                design)
+fit <- glmQLFit(y,
+design)
 ```
 
 ## Cálculo de expresión diferencial
@@ -99,8 +101,10 @@ fit <- glmQLFit(y,
 ### Iteración sobre coeficientes
 
 ```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-res_NL_PT <- glmQLFTest(fit,
-                        coef = "region_longMetastasis Nodo Linfático")
+# res_NL_PT <- glmQLFTest(fit,
+#                         coef = "region_longMetastasis Nodo Linfático")
+res_NL_PT <- glmTreat(fit,
+                      coef = "region_longMetastasis Nodo Linfático")
 tab_NL_PT <- topTags(res_NL_PT,
                         n = Inf)$table %>%
   tibble::rownames_to_column(var = "gene_id")
@@ -110,17 +114,19 @@ tab_NL_PT <- tab_NL_PT %>%
 ```
 
 ```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-pb$region_long <- relevel(factor(pb$region_long), ref = "Colon Normal")
+pb$region_long <- relevel(pb$region_long, ref = "Colon Normal")
 design_CN <- model.matrix(~ patient + region_long, 
                        data = colData(pb))
-y_CN <- estimateDisp(y,
-                  design_CN)
-fit_CN <- glmQLFit(y_CN,
+# y_CN <- estimateDisp(y,
+                  # design_CN)
+fit_CN <- glmQLFit(y,
                    design_CN)
 
 
-res_PT_CN <- glmQLFTest(fit_CN,
-                        coef = "region_longTumor Primario")
+res_PT_CN <- glmTreat(fit_CN,
+                      coef = "region_longTumor Primario")
+# res_PT_CN <- glmQLFTest(fit_CN,
+#                         coef = "region_longTumor Primario")
 tab_PT_CN <- topTags(res_PT_CN,
                         n = Inf)$table %>%
   tibble::rownames_to_column(var = "gene_id")
@@ -131,16 +137,6 @@ tab_PT_CN <- tab_PT_CN %>%
 
 
 
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-res_NL_PT <- glmQLFTest(fit,
-                        coef = "region_longMetastasis Nodo Linfático")
-tab_NL_PT <- topTags(res_NL_PT,
-                        n = Inf)$table %>%
-  tibble::rownames_to_column(var = "gene_id")
-tab_NL_PT <- tab_NL_PT %>%
-  mutate(gene_name = rowData(pb)$gene_name[match(tab_NL_PT$gene_id,
-                                                   rownames(pb))])
-```
 
 
 # Identificación de genes potenciales para firma metastásica
@@ -161,8 +157,8 @@ MNL <- tab_NL_PT %>%
 MNL <- MNL %>%
   mutate(
     sig = case_when(
-      logFC > 1 & log10pvalue > -log10(0.05) ~ "UP",
-      logFC < -1 & log10pvalue > -log10(0.05) ~ "DOWN",
+      logFC > 1 & log10FDR > -log10(0.05) ~ "UP",
+      logFC < -1 & log10FDR > -log10(0.05) ~ "DOWN",
       TRUE ~ "NOT SIG."
     ),
     sig = factor(sig, levels = c("UP", "DOWN", "NOT SIG.")),
@@ -172,7 +168,7 @@ MNL <- MNL %>%
 
 ggplot(MNL, 
        aes(x = logFC, 
-           y = log10pvalue, 
+           y = log10FDR, 
            color = sig)) +
   geom_point() +
   scale_color_manual(values = c("UP" = "red", 
@@ -181,7 +177,7 @@ ggplot(MNL,
   theme_minimal() + 
   labs(title = "Volcano Plot: Metástasis Nodo Linfático vs Tumor Primario",
        x = "log Fold Change",
-       y = "-log10(p-value)") +
+       y = "-log10(FDR)") +
   geom_text_repel(aes(label = gene_label),
                   size = 3,
                   max.overlaps = 10,
@@ -262,4 +258,7 @@ candidates_TP_NC <- CN %>%
 write.csv(candidates_TP_NC, "../Results/candidates_TP_NC.csv", row.names = F)
 ```
 
+```{r}
+sessionInfo()
+```
 

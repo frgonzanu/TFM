@@ -16,6 +16,8 @@ library(scater)
 library(scuttle)
 library(monocle)
 library(SingleR)
+library(cacoa)
+source("Functions/run_cacoa_composition.R")
 
 conflicted::conflict_prefer("select", "dplyr")
 conflicted::conflict_prefer("filter", "dplyr")
@@ -32,7 +34,40 @@ rownames(sce) <- rowData(sce)$gene_name
 
 
 
-# Exploración de datos - reducción de dimensionalidad
+# Exploración de datos
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+plotHighestExprs(sce, 
+                 exprs_values = "counts")
+plotHighestExprs(sce, 
+                 exprs_values = "logcounts")
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+vars <- getVarianceExplained(sce,
+                             variables = c("batch", "patient",
+                                           "region_long",
+                                           "Gender", "Age",
+                                           "AJCC.Stage", "Primary.Site"),
+                             assay.type = "logcounts")
+plotExplanatoryVariables(vars)
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
 
 
 
@@ -51,13 +86,19 @@ plotReducedDim(sce,
 
 ```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
 sce <- runTSNE(sce, 
-               dimred = "PCA_harmony",
+               dimred = "PCA",
                # ncomponents = 2, 
                perplexity = 30)
                # max_iter = 2000)
 plotReducedDim(sce,
                dimred = "TSNE",
-               colour_by = "region_long") +
+               colour_by = "patient",
+               shape_by = "region_long") +
+  labs(title = "t-SNE with PCA components") +
+  guides(colour = guide_legend(title = "Region"))
+plotTSNE(sce,
+         colour_by = "patient",
+         shape_by = "region_long") +
   labs(title = "t-SNE with PCA components") +
   guides(colour = guide_legend(title = "Region"))
 
@@ -71,7 +112,7 @@ plotReducedDim(sce,
 set.seed(123)
 sce <- runUMAP(sce,
                dimred = "PCA_harmony",
-               n_neighbors = 30,
+               n_neighbors = 10,
                min_dist = 0.15,
                metric = "cosine",
                # metric = "correlation",
@@ -79,125 +120,18 @@ sce <- runUMAP(sce,
                )
 plotReducedDim(sce,
                dimred = "UMAP",
-               colour_by = "region_long") +
+               colour_by = "patient",
+               shape_by = "region_long") +
   labs(title = "UMAP with PCA components") +
   guides(colour = guide_legend(title = "Region"))
 ```
+
 
 ## Anotación celular
 
 Mediante métodos automáticos (como SingleR), se pueden asignar etiquetas de tipo celular a cada célula basándose en la expresión génica y comparándola con referencias de tipos celulares conocidos. Esto podría ayudar a identificar qué tipos celulares están presentes en cada región anatómica y cómo se distribuyen. Si bien es cierto que los métodos automáticos pueden no ser perfectos.
 
-```{r}
-library(Matrix)
-
-# 1. expresión
-mat <- readMM("../Datos/CRC sc ref/matrix.mtx")
-dim(mat) # si es de 371223 genes, borrar punto 3
-
-genes <- read.delim("../Datos/CRC sc ref/matrix.genes.tsv", header = FALSE)
-barcodes <- read.delim("../Datos/CRC sc ref/matrix.barcodes.tsv", header = FALSE)
-
-rownames(mat) <- make.unique(genes$V2)
-colnames(mat) <- barcodes$V1
-
-# 2. tSNE + labels
-tsne <- read.delim("../Datos/CRC sc ref/crc10x_tSNE_cl_global.tsv", header = TRUE)
-tsne <- tsne[tsne$NAME != "TYPE", ]
-rownames(tsne) <- tsne$NAME
-
-# 3. alinear
-common <- base::intersect(colnames(mat), rownames(tsne))
-
-mat <- mat[, common]
-tsne <- tsne[common, ]
-
-# 4. construir referencia
-
-
-ref_crc <- SingleCellExperiment(
-  assays = list(logcounts = mat),
-  colData = tsne
-)
-
-c_genes <- base::intersect(rownames(ref_crc),
-                           rownames(sce))
-ref_crc <- ref_crc[c_genes,]
-
-
-
-ref_pb <- aggregateAcrossCells(
-  ref_crc,
-  ids = ref_crc$ClusterFull,
-  use.assay.type = "logcounts"
-)
-```
-
-
-```{r}
-pred_crc <- SingleR(
-  test = sce,
-  ref = ref_pb,
-  labels = colnames(ref_pb),
-  assay.type.test = "logcounts",
-  assay.type.ref = "logcounts"
-)
-
-sce$SR_CRC <- pred_crc$pruned.labels
-
-
-plotReducedDim(sce[, !is.na(sce$SR_CRC)],
-               dimred = "UMAP",
-               colour_by = "SR_CRC") +
-  labs(title = "UMAP with SingleR CRC annotations") +
-  guides(colour = guide_legend(title = "SingleR CRC Annotation"))
-
-```
-
-
-## Proporciones celulares
-
-## Cálculo de proporciones celulares por paciente y tejido
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE, fig.height=8}
-proportions <- as.data.frame(colData(sce)) %>%
-  filter(!is.na(SR_CRC)) %>%
-  group_by(patient, region_long, SR_CRC) %>%
-  summarise(count = n()) %>%
-  group_by(patient, region_long) %>%
-  mutate(proportion = count / sum(count))
-
-ggplot(proportions, 
-       aes(x = region_long, 
-           y = proportion, 
-           fill = SR_CRC)) +
-  geom_bar(stat = "identity", 
-           position = "fill") +
-  labs(title = "Proporción de tipos celulares por región",
-       x = "Localización",
-       y = "Proporción",
-       fill = "Tipo celular") +
-  scale_fill_manual (values = paletteer::paletteer_d("ggsci::category20c_d3")) +
-  theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE, fig.height=8}
-ggplot(proportions, 
-       aes(x = patient, 
-           y = proportion, 
-           fill = SR_CRC)) +
-  geom_bar(stat = "identity", 
-           position = "fill") +
-  labs(title = "Proporción de tipos celulares por región",
-       x = "Localización",
-       y = "Proporción",
-       fill = "Tipo celular") +
-  scale_fill_manual (values = paletteer::paletteer_d("ggsci::category20c_d3")) +
-  theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
-```
-
+Anotación  con referencia estándar: 
 
 ```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE, fig.width=10}
 ref <- celldex::HumanPrimaryCellAtlasData()
@@ -214,9 +148,217 @@ sce$cellAnnot <- sce$SingleR_labels$labels
 plotReducedDim(sce,
                dimred = "UMAP",
                colour_by = "cellAnnot") +
-  labs(title = "UMAP with SingleR annotations") +
-  guides(colour = guide_legend(title = "SingleR Annotation"))
+  labs(title = "UMAP with SingleR annotations - cell type - standar ref") +
+  guides(colour = guide_legend(title = "Cell type"))
 ```
+
+Anotación con referencia personalizada:
+
+```{r, message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+if(!file.exists("../Datos/pb_ref_full.rds")){
+library(Matrix)
+
+# 1. expresión
+  
+mat <- readMM("../Datos/CRC sc ref/matrix.mtx")
+dim(mat) # si es de 371223 genes, borrar punto 3
+
+genes <- read.delim("../Datos/CRC sc ref/matrix.genes.tsv", header = FALSE)
+barcodes <- read.delim("../Datos/CRC sc ref/matrix.barcodes.tsv", header = FALSE)
+
+rownames(mat) <- make.unique(genes$V2)
+colnames(mat) <- barcodes$V1
+
+
+# 2. tSNE + labels
+
+tsne <- read.delim("../Datos/CRC sc ref/crc10x_tSNE_cl_global.tsv", header = TRUE)
+tsne <- tsne[tsne$NAME != "TYPE", ]
+rownames(tsne) <- tsne$NAME
+
+
+# 3. construir referencia
+
+ref_crc <- SingleCellExperiment(
+  assays = list(logcounts = mat),
+  colData = tsne
+)
+
+c_genes <- base::intersect(rownames(ref_crc),
+                           rownames(sce))
+ref_crc <- ref_crc[c_genes,]
+
+# 5. agregamos por tipo celular
+
+## full
+
+ref_pb_full <- aggregateAcrossCells(
+  ref_crc,
+  ids = ref_crc$ClusterFull,
+  use.assay.type = "logcounts"
+)
+saveRDS(ref_pb, "../Datos/pb_ref_full.rds")
+
+## mid
+
+ref_pb_mid <- aggregateAcrossCells(
+  ref_crc,
+  ids = ref_crc$ClusterMidway,
+  use.assay.type = "logcounts"
+)
+saveRDS(ref_pb_mid, "../Datos/pb_ref_mid.rds")
+
+
+} else {
+  # si ya existen los cargamos
+  ref_pb_full <- readRDS("../Datos/pb_ref_full.rds")
+  ref_pb_mid <- readRDS("../Datos/pb_ref_mid.rds")
+}
+```
+
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE, fig.width=10}}
+pred_crc_full <- SingleR(
+  test = sce,
+  ref = ref_pb_full,
+  labels = colnames(ref_pb_full),
+  assay.type.test = "logcounts",
+  assay.type.ref = "logcounts"
+)
+
+pred_crc_mid <- SingleR(
+  test = sce,
+  ref = ref_pb_mid,
+  labels = colnames(ref_pb_mid),
+  assay.type.test = "logcounts",
+  assay.type.ref = "logcounts"
+)
+
+sce$annFull <- pred_crc_full$pruned.labels
+sce$annMid <- pred_crc_mid$pruned.labels
+
+
+plotReducedDim(sce[, !is.na(sce$annMid)],
+               dimred = "UMAP",
+               colour_by = "annMid") +
+  labs(title = "UMAP with SingleR CRC annotations - cell type - custom ref") +
+  guides(colour = guide_legend(title = "Cell type"))
+
+plotReducedDim(sce[, !is.na(sce$annFull)],
+               dimred = "UMAP",
+               colour_by = "annFull") +
+  labs(title = "UMAP with SingleR CRC annotations - cell subtypes - custom ref") +
+  guides(colour = guide_legend(title = "Cell subtype"))
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE, fig.width=10}
+cao_CN <- run_cacoa_composition(
+  sce = sce,
+  target = "Tumor Primario",
+  ref = "Colon Normal",
+  celltype_col = "annFull",
+  region_col = "region_long",
+  patient_col = "patient",
+  assay_name = "logcounts"
+)
+cao_CN$plotCellLoadings(show.pvals = T)
+
+cao_MNL <- run_cacoa_composition(
+  sce = sce,
+  ref = "Tumor Primario",
+  target = "Metastasis Nodo Linfático",
+  celltype_col = "annFull",
+  region_col = "region_long",
+  patient_col = "patient",
+  assay_name = "logcounts"
+)
+cao_MNL$plotCellLoadings(show.pvals = T)
+
+cao_MH <- run_cacoa_composition(
+  sce = sce,
+  ref = "Tumor Primario",
+  target = "Metastasis Higado",
+  celltype_col = "annFull",
+  region_col = "region_long",
+  patient_col = "patient",
+  assay_name = "logcounts"
+)
+cao_MH$plotCellLoadings(show.pvals = T)
+```
+
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE, fig.width=15}
+ggcells(sce,
+        mapping = aes(x = UMAP.1,
+                      y = UMAP.2,
+                      colour = region_long)) + 
+  geom_point(alpha = 0.75) + 
+  stat_density2d() + 
+  facet_wrap(~annFull) 
+```
+
+
+
+## Proporciones celulares
+
+## Cálculo de proporciones celulares por paciente y tejido
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE, fig.height=8}
+proporcs <- as.data.frame(colData(sce)) %>%
+  filter(!is.na(annFull)) %>%
+  group_by(patient, region_long, annFull) %>%
+  summarise(count = n()) %>%
+  group_by(patient, region_long) %>%
+  mutate(proportion = count / sum(count))
+
+ggplot(proporcs, 
+       aes(x = region_long, 
+           y = proportion, 
+           fill = annFull)) +
+  geom_bar(stat = "identity", 
+           position = "fill") +
+  labs(title = "Proporción de tipos celulares por región",
+       x = "Localización",
+       y = "Proporción",
+       fill = "Tipo celular") +
+  scale_fill_manual (values = paletteer::paletteer_d("ggsci::category20c_d3")) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+(tabla_RL_ann <- table(
+  sce$annFull,
+  sce$region_long
+  ))
+
+chi_tab <- chisq.test(tabla_RL_ann)
+print(chi_tab$p.value)
+rcompanion::cramerV(tabla_RL_ann)
+pheatmap::pheatmap(chi_tab$residuals,
+                   cluster_rows = F,
+                   cluster_cols = F,
+                   scale = 'row')
+  
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE, fig.height=8}
+ggplot(proporcs, 
+       aes(x = patient, 
+           y = proportion, 
+           fill = annFull)) +
+  geom_bar(stat = "identity", 
+           position = "fill") +
+  labs(title = "Proporción de tipos celulares por paciente",
+       x = "Localización",
+       y = "Proporción",
+       fill = "Tipo celular") +
+  scale_fill_manual (values = paletteer::paletteer_d("ggsci::category20c_d3")) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+
+
 
 
 
@@ -225,7 +367,7 @@ plotReducedDim(sce,
 Se utiliza el algoritmo de clustering Louvain para identificar grupos de células que comparten patrones de expresión génica similares. Esto podría revelar subpoblaciones celulares dentro de cada región anatómica y ayudar a caracterizar la heterogeneidad celular presente en el tumor.
 
 
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE, fig.width=10}
 set.seed(123)
 
 sce$cluster <- factor(
@@ -233,7 +375,7 @@ sce$cluster <- factor(
     scran::buildSNNGraph(
       sce,
       use.dimred = "PCA_harmony",
-      k = 20
+      k = 8
     )
   )$membership
 )
@@ -320,4 +462,7 @@ openxlsx::write.xlsx(vip_sPLSDA,
 saveRDS(sce, "../Datos/sce_2.rds")
 ```
 
+```{r}
+sessionInfo()
+```
 

@@ -1,7 +1,18 @@
 ---
 title: "Fase 0 - QC y procesado inicial"
 author: "Francisco Manuel González Nuño"
-output: html_document
+output:
+  html_document:
+    toc: true              # tabla de contenidos
+    toc_depth: 2
+    toc_float: true        # TOC flotante
+    number_sections: true  # numerar secciones
+    theme: cosmo           # tema de Bootstrap (cosmo, united, journal, etc.)
+    highlight: tango       # estilo de resaltado de código
+    code_folding: "show"   # "hide", "show", "none"
+    code_download: true    # botón para descargar el código
+    df_print: paged        # impresión de data frames (paged, tibble, default)
+    self_contained: true
 ---
 
 ```{r setup, include=FALSE}
@@ -32,7 +43,7 @@ gene_annot <- as.data.frame(gtf) %>%
   filter(type == "gene") %>%
   select(gene_id, gene_name, gene_type) %>%
   distinct()
-# write.csv(gene_annot, "../Datos/gene_annot.csv", row.names = F)
+write.csv(gene_annot, "../Datos/gene_annot.csv", row.names = F)
 
 rm(gtf)
 ```
@@ -249,4 +260,8 @@ Así finalizamos la fase 0, con un objeto con la matriz de expresión y metadata
 
 ```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
 saveRDS(sce_qc, "../Datos/sce_qc.rds")
+```
+
+```{r}
+sessionInfo()
 ```
