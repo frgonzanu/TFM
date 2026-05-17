@@ -59,8 +59,8 @@ pb <- aggregateAcrossCells(
 ```
 
 ```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-# pb <- pb[, !(pb$region_long %in% c("Metastasis post-tratamiento"))]
-pb <- pb[, (!pb$patient %in% c("CRC01", "CRC02"))]
+pb <- pb[, !(pb$region_long %in% c("Metastasis post-tratamiento"))]
+# pb <- pb[, (!pb$patient %in% c("CRC01", "CRC02"))]
 # pb <- pb[, pb$region_long %in% c("Colon Normal", "Tumor Primario", "Metastasis Nodo Linfático")]
 pb$patient <- factor(pb$patient)
 pb$patient <- droplevels(pb$patient)
@@ -92,6 +92,7 @@ design <- model.matrix(~ patient + region_long,
 ```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
 keep <- filterByExpr(y, 
                      min.count = 10,
+                     min.total.count = 15,
                      design = design)
 y <- y[keep, , keep.lib.sizes = F]
 ```
@@ -133,7 +134,7 @@ tab_NL_PT <- tab_NL_PT %>%
 
 ```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
 pb$region_long <- relevel(pb$region_long, ref = "Colon Normal")
-design_CN <- model.matrix(~ patient + region_long, 
+design_CN <- model.matrix(~ region_long,
                        data = colData(pb))
 # y_CN <- estimateDisp(y,
                   # design_CN)
@@ -215,11 +216,11 @@ ggplot(MNL,
 candidates_NL_PT <- MNL %>%
   filter(sig != "NOT SIG.") %>%
   pull(gene_name)
-write.csv(candidates_NL_PT, "../Results/candidates_NL_PT.csv", row.names = F, col.names = F)
+# write.csv(candidates_NL_PT, "../Results/candidates_NL_PT.csv", row.names = F, col.names = F)
 ```
 
 
-## Tumor Primario vs. Colon Normal
+## Exploratorio: Tumor Primario vs. Colon Normal
 
 ```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
 CN <- tab_PT_CN %>%
@@ -274,7 +275,7 @@ ggplot(CN,
 candidates_TP_NC <- CN %>%
   filter(sig != "NOT SIG.") %>%
   pull(gene_name)
-write.csv(candidates_TP_NC, "../Results/candidates_TP_NC.csv", row.names = F)
+# write.csv(candidates_TP_NC, "../Results/candidates_TP_NC.csv", row.names = F)
 ```
 
 ```{r}

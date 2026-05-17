@@ -1,7 +1,18 @@
 ---
 title: "Fase 2 - Pseudobulk y expresión diferencial"
 author: "Francisco Manuel González Nuño"
-output: html_document
+output:
+  html_document:
+    toc: true              # tabla de contenidos
+    toc_depth: 2
+    toc_float: true        # TOC flotante
+    number_sections: true  # numerar secciones
+    theme: cosmo           # tema de Bootstrap (cosmo, united, journal, etc.)
+    highlight: tango       # estilo de resaltado de código
+    code_folding: "show"   # "hide", "show", "none"
+    code_download: true    # botón para descargar el código
+    df_print: paged        # impresión de data frames (paged, tibble, default)
+    self_contained: true
 ---
 
 ```{r setup, include=FALSE}
@@ -44,13 +55,13 @@ pb <- aggregateAcrossCells(
 ```
 
 ```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-# pb <- pb[, pb$region_long != "Metastasis post-tratamiento"]
-pb <- pb[, pb$region_long %in% c("Tumor Primario", "Metastasis Nodo Linfático")]
+pb <- pb[, pb$region_long != "Metastasis post-tratamiento"]
+# pb <- pb[, pb$region_long %in% c("Tumor Primario", "Metastasis Nodo Linfático")]
 pb$patient <- factor(pb$patient)
 pb$patient <- droplevels(pb$patient)
 pb$region_long <- factor(pb$region_long)
 pb$region_long <- droplevels(pb$region_long)
-pb$region_long <- relevel(factor(pb$region_long), ref = "Tumor Primario")
+pb$region_long <- relevel(pb$region_long, ref = "Tumor Primario")
 
 ```
 
@@ -58,21 +69,6 @@ pb$region_long <- relevel(factor(pb$region_long), ref = "Tumor Primario")
 
 ```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
 y <- DGEList(counts = assay(pb, "counts"))
-```
-
-## Filtrado de genes
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-keep <- filterByExpr(y, 
-                     # group = pb$region_long,
-                     design = design)
-y <- y[keep, , keep.lib.sizes = F]
-```
-
-## Normalización
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-y <- calcNormFactors(y)
 ```
 
 ## Diseño
@@ -83,6 +79,23 @@ Al poner la fórmula `~ patient`, esto debe recoger el *batch* debido a que ést
 design <- model.matrix(~ patient + region_long, 
                        data = colData(pb))
 ```
+
+## Filtrado de genes
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+keep <- filterByExpr(y, 
+                     # group = pb$region_long,
+                     design = design,
+                     min.count = 10)
+y <- y[keep, , keep.lib.sizes = F]
+```
+
+## Normalización
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+y <- calcNormFactors(y)
+```
+
 
 ## Ajuste del modelo
 
@@ -109,8 +122,9 @@ coef_regions <- grep("^region_long",
 all_result <- list()
 
 for(coef_name in coef_regions){
-  res <- glmQLFTest(fit, 
-                    coef = coef_name)
+  res <- glmTreat(fit, 
+                  coef = coef_name,
+                  lfc = log2(1.5))
   tab <-  topTags(res,
                   n = Inf)$table
   
@@ -119,10 +133,10 @@ for(coef_name in coef_regions){
                      coef_name)
   tab$gene_id <- rownames(tab)
   
-  tab <- tab[, c("gene_id", "logFC", "logCPM", "F", "PValue", "FDR")]
+  tab <- tab[, c("gene_id", "logFC", "logCPM", "PValue", "FDR")]
   
-  colnames(tab)[2:6] <- paste0(
-    c("logFC_", "logCPM_", "F_", "pvalue_", "FDR_"),
+  colnames(tab)[2:5] <- paste0(
+    c("logFC_", "logCPM_", "pvalue_", "FDR_"),
     gsub(" ", "", region_name),
     "_vs_TumorPrimario"
   )
@@ -141,7 +155,7 @@ de_merged <- de_merged %>%
   select(1, gene_name, everything()) %>%
   # filter(logCPM_MetastasisHigado_vs_TumorPrimario > 1 | 
     filter(logCPM_MetastasisNodoLinfático_vs_TumorPrimario > 1)
-write.csv(de_merged, "../Results/DE_genes_all_comparisons.csv")
+# write.csv(de_merged, "../Results/DE_genes_all_comparisons.csv")
 ```
 
 
@@ -155,7 +169,7 @@ MNL <- de_merged %>%
   rename(
     logFC = logFC_MetastasisNodoLinfático_vs_TumorPrimario,
     logCPM = logCPM_MetastasisNodoLinfático_vs_TumorPrimario,
-    'F-statistic' = F_MetastasisNodoLinfático_vs_TumorPrimario,
+    # 'F-statistic' = F_MetastasisNodoLinfático_vs_TumorPrimario,
     pvalue = pvalue_MetastasisNodoLinfático_vs_TumorPrimario,
     FDR = FDR_MetastasisNodoLinfático_vs_TumorPrimario
   ) %>%
@@ -215,7 +229,7 @@ MH <- de_merged %>%
   rename(
     logFC= logFC_MetastasisHigado_vs_TumorPrimario,
     logCPM= logCPM_MetastasisHigado_vs_TumorPrimario,
-    'F-statistic'= F_MetastasisHigado_vs_TumorPrimario,
+    # 'F-statistic'= F_MetastasisHigado_vs_TumorPrimario,
     pvalue= pvalue_MetastasisHigado_vs_TumorPrimario,
     FDR= FDR_MetastasisHigado_vs_TumorPrimario
   ) %>%
@@ -275,7 +289,7 @@ CN <- de_merged %>%
   rename(
     logFC= logFC_ColonNormal_vs_TumorPrimario,
     logCPM= logCPM_ColonNormal_vs_TumorPrimario,
-    'F-statistic'= F_ColonNormal_vs_TumorPrimario,
+    # 'F-statistic'= F_ColonNormal_vs_TumorPrimario,
     pvalue= pvalue_ColonNormal_vs_TumorPrimario,
     FDR= FDR_ColonNormal_vs_TumorPrimario
   ) %>%
@@ -331,7 +345,7 @@ ggplot(CN,
 ## Genes candidatos metástasis vs tumor primario
 
 ```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-candidates <- #merge(
+candidates <- merge(
   MNL %>% 
     filter(pvalue < 0.05) %>% 
     select(gene_id, gene_name, logFC, FDR, pvalue) %>%
@@ -339,23 +353,23 @@ candidates <- #merge(
       logFC_MNL = logFC,
       FDR_MNL = FDR,
       pvalue_MNL = pvalue
-    ) %>%
-#   MH %>%
-#     filter(pvalue < 0.05) %>% 
-#     select(gene_id, gene_name, logFC, FDR, pvalue) %>%
-#     rename(
-#       logFC_MH = logFC,
-#       FDR_MH = FDR,
-#       pvalue_MH = pvalue
-#     ),
-#   by = c("gene_id", "gene_name")
-# ) %>%
+    ),
+  MH %>%
+    filter(pvalue < 0.05) %>%
+    select(gene_id, gene_name, logFC, FDR, pvalue) %>%
+    rename(
+      logFC_MH = logFC,
+      FDR_MH = FDR,
+      pvalue_MH = pvalue
+    ),
+  by = c("gene_id", "gene_name")
+) %>%
   mutate(
     'UP/DOWN' = case_when(
-      logFC_MNL > 1 ~ "UP",
-      logFC_MNL < -1 ~ "DOWN",
-      # logFC_MNL > 1 & logFC_MH > 1 ~ "UP in both",
-      # logFC_MNL < -1 & logFC_MH < -1 ~ "DOWN in both",
+      # logFC_MNL > 1 ~ "UP",
+      # logFC_MNL < -1 ~ "DOWN",
+      logFC_MNL > 1 & logFC_MH > 1 ~ "UP in both",
+      logFC_MNL < -1 & logFC_MH < -1 ~ "DOWN in both",
       TRUE ~ "Other"
     ),
     labels = ifelse(`UP/DOWN` != "Other", gene_name, "")
