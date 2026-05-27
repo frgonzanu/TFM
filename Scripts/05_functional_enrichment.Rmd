@@ -1,5 +1,5 @@
 ---
-title: "Fase 4.1 - Análisis de enriquecimiento funcional"
+title: "Análisis de enriquecimiento funcional"
 author: "Francisco Manuel González Nuño"
 output:
   html_document:

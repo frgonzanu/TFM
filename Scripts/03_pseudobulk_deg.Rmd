@@ -1,5 +1,5 @@
 ---
-title: "Fase 2 - Pseudobulk y expresión diferencial"
+title: "Pseudobulk y expresión diferencial"
 author: "Francisco Manuel González Nuño"
 output:
   html_document:

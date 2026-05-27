@@ -31,8 +31,8 @@ library(stringr)
 
 metaData <- meta %>%
   select(
-    sample = clean_title
-    # relation
+    sample = clean_title,
+    relation
   ) %>%
   separate(
     sample,
@@ -64,7 +64,7 @@ metaData <- metaData %>%
   select(-relation)
 
 
-SRAtable <- read.csv2("../Datos/SraRunTable.csv", sep = ",") %>%
+SRAtable <- read.csv2("../Datos/Metadata notes/SraRunTable.csv", sep = ",") %>%
   select(Run, BioSample) %>%
   rename(SRA = Run)
 

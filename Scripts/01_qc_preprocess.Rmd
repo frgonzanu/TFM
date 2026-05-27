@@ -1,5 +1,5 @@
 ---
-title: "Fase 0 - QC y procesado inicial"
+title: "QC y procesado inicial"
 author: "Francisco Manuel González Nuño"
 output:
   html_document:

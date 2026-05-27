@@ -1,5 +1,5 @@
 ---
-title: "Fase 1 - Caracterización de la arquitectura"
+title: "Caracterización de la arquitectura"
 author: "Francisco Manuel González Nuño"
 output:
   html_document:

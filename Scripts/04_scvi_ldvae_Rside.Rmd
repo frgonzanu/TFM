@@ -1,5 +1,5 @@
 ---
-title: "Fase 3 - R Side - DL"
+title: "scVI - R side"
 author: "Francisco Manuel González Nuño"
 output: html_document
 ---
@@ -41,50 +41,5 @@ zellkonverter::writeH5AD(sce, file.path(export_path, ZK_file))
 ```
 
 ```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-write.csv(colData(sce), "../Datos/ZellKonverter/meta_scvi_in_5k.csv", row.names = TRUE)
-write.csv(rowData(sce), "../Datos/ZellKonverter/row_scvi_in_5k.csv", row.names = TRUE)
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
+sessionInfo()
 ```

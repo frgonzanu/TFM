@@ -1,5 +1,5 @@
 ---
-title: "Fase 4.2 - Análisis inferencial de vías y factores de transcripción"
+title: "Análisis inferencial de vías y factores de transcripción"
 author: "Francisco Manuel González Nuño"
 output:
   html_document:
@@ -107,7 +107,7 @@ pheatmap::pheatmap(res_progeny,
                    fontsize_col = 10)
 ```
 
-#DoRothEA
+# DoRothEA
 
 ```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
 # regulons <- decoupleR::get_dorothea(organism = "human", 
@@ -165,4 +165,6 @@ pheatmap::pheatmap(tf_matrix,
          main = "DoRothEA - TF activity") 
 ```
 
-
+```{r}
+sessionInfo()
+```
