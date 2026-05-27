@@ -1,0 +1,522 @@
+---
+title: "Fase 4.1 - Análisis de enriquecimiento funcional"
+author: "Francisco Manuel González Nuño"
+output:
+  html_document:
+    toc: true              # tabla de contenidos
+    toc_depth: 2
+    toc_float: true        # TOC flotante
+    number_sections: true  # numerar secciones
+    theme: cosmo           # tema de Bootstrap (cosmo, united, journal, etc.)
+    highlight: tango       # estilo de resaltado de código
+    code_folding: "show"   # "hide", "show", "none"
+    code_download: true    # botón para descargar el código
+    df_print: paged        # impresión de data frames (paged, tibble, default)
+    self_contained: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+library(gprofiler2)
+library(pathfindR)
+library(dplyr)
+library(tibble)
+library(tidyr)
+library(progeny)
+library(pheatmap)
+library(stringr)
+library(msigdbr)
+library(clusterProfiler)
+library(org.Hs.eg.db)
+library(enrichplot)
+library(ggplot2)
+library(ReactomePA)
+library(ggrepel)
+
+conflicted::conflict_prefer("select", "dplyr")
+conflicted::conflict_prefer("filter", "dplyr")
+```
+
+
+
+# GSEA
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+de <- read.csv("../Results/DE_pseudobulk.csv") 
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+MSI_DF <- msigdbr(species = "Homo sapiens")
+hallmarks <- MSI_DF %>% 
+  filter(gs_collection == "H") %>%
+  dplyr::select(gs_name, gene_symbol)
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+de2 <- de[!duplicated(de$gene_name),]
+stats_datos_MNL <- de2$logFC_Metastasis.Nodo.Linfático
+names(stats_datos_MNL) <- de2$gene_name
+stats_datos_MNL <- sort(stats_datos_MNL,
+                        decreasing = TRUE)
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+gsea_res_MNL <- GSEA(
+  geneList = stats_datos_MNL,
+  TERM2GENE = hallmarks,
+  pAdjustMethod = "BH",
+  pvalueCutoff = 1,
+  verbose = T,
+  by = "fgsea"
+)
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+pathways <- gsea_res_MNL@result %>% filter(pvalue < 0.1) %>% pull(ID)
+
+for(p in 1:length(pathways)){
+print(pathways[p])
+ g <- gseaplot2(gsea_res_MNL, 
+                geneSetID = pathways[p], 
+                title = pathways[p], 
+                pvalue_table = TRUE, 
+                pvalue_table_columns = c("pvalue", "p.adjust"), 
+                pvalue_table_rownames = "")
+ print(g)
+}
+```
+
+# Metástasis de nodo linfático
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+df_NL <- read.csv("../Results/candidates_NL_PT.csv")
+background_symbols <- unique(de$gene_name)
+```
+
+## GO BP
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE, fig.height=7, fig.width=7}
+go_bp_NL <- enrichGO(
+  gene = df_NL$x,# %>% filter(pvalue_MetastasisNodoLinfático_vs_TumorPrimario < 0.05) %>% pull(gene_name),
+  OrgDb = org.Hs.eg.db,
+  universe = background_symbols,
+  keyType = "SYMBOL",
+  ont = "BP",
+  pAdjustMethod = "BH"
+  # pvalueCutoff = 1,
+  # qvalueCutoff = 1
+)
+clusterProfiler::dotplot(go_bp_NL, showCategory = 15) + ggtitle("GO Biological Process Enrichment")
+```
+
+```{r , message=FALSE, include=FALSE, echo=FALSE, warning=FALSE}
+NL_GOBP <- ggplot(go_bp_NL@result %>% 
+                    slice_min(pvalue, n = 15) %>% 
+                    separate(GeneRatio, 
+                             into = c("num", "den"), 
+                             sep = "/", 
+                             convert = TRUE) %>%
+                    mutate(ratio_num = num / den) %>%
+                    arrange(ratio_num) %>%
+                    mutate(Description = factor(Description, levels = Description)),
+                  aes(x = ratio_num,
+                      y = Description,
+                      col = pvalue,
+                      size = Count)) + 
+  geom_point()  +
+  labs(x = "GeneRatio",
+       y = "GO Term",
+       col = "p-value",
+       size = "Count") +
+  theme_bw() +
+  ggtitle("GO Biological Process") +
+  scale_color_gradient(low = "steelblue", high = "red")
+
+# NL_alluvial <- ggplot(go_bp_NL@result %>%
+#                         slice_min(pvalue, n = 15) %>%
+#                         )
+
+
+```
+
+## KEGG
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE, fig.height=7, fig.width=7}
+# convertimes SYMBOL a ENTREZID
+entrez_list_NL <- bitr(
+  df_NL$x,# %>% filter(pvalue_MetastasisNodoLinfático_vs_TumorPrimario < 0.05) %>% pull(gene_name),
+  fromType = "SYMBOL",
+  toType = "ENTREZID",
+  OrgDb = org.Hs.eg.db
+)
+background_symbols_entrez <- unique(
+  bitr(
+    background_symbols,
+    fromType = "SYMBOL",
+    toType = "ENTREZID",
+    OrgDb = org.Hs.eg.db
+)$ENTREZID)
+
+# KEGG
+kegg_res_NL <- enrichKEGG(
+  gene = entrez_list_NL$ENTREZID,
+  organism = "hsa",
+  universe = background_symbols_entrez,
+  keyType = "kegg",
+  pAdjustMethod = "BH",
+  pvalueCutoff = 0.1,
+  qvalueCutoff = 0.1
+)
+clusterProfiler::dotplot(kegg_res_NL, showCategory = 15) + ggtitle("KEGG Pathways")
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE, fig.height=9, fig.width=7}
+reactome_res_NL <- enrichPathway(
+  gene = entrez_list_NL$ENTREZID,
+  organism = "human",
+  universe = background_symbols_entrez,
+  pAdjustMethod = "BH",
+  pvalueCutoff = 0.15,
+  qvalueCutoff = 0.15,
+  readable = TRUE
+)
+ReactomePA::dotplot(reactome_res_NL, showCategory = 15
+                    #, colorBy = 'pvalue'
+                    ) + ggtitle("Reactome")
+```
+
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+df_CN <- read.csv("../Results/candidates_TP_NC.csv")
+```
+
+# TP vs CN
+
+
+## GO BP
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE, fig.height=7, fig.width=7}
+go_bp_CN <- enrichGO(
+  gene = df_CN$x,# %>% filter(pvalue_MetastasisNodoLinfático_vs_TumorPrimario < 0.05) %>% pull(gene_name),
+  OrgDb = org.Hs.eg.db,
+  keyType = "SYMBOL",
+  ont = "BP",
+  universe = background_symbols,
+  pAdjustMethod = "BH",
+  pvalueCutoff = 0.1,
+  qvalueCutoff = 0.1
+)
+clusterProfiler::dotplot(go_bp_CN, showCategory = 15) + ggtitle("GO Biological Process Enrichment")
+```
+
+## KEGG
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE, fig.height=7, fig.width=7}
+# convertimes SYMBOL a ENTREZID
+entrez_list_CN <- bitr(
+  df_CN$x,# %>% filter(pvalue_MetastasisNodoLinfático_vs_TumorPrimario < 0.05) %>% pull(gene_name),
+  fromType = "SYMBOL",
+  toType = "ENTREZID",
+  OrgDb = org.Hs.eg.db
+)
+
+# KEGG
+kegg_res_CN <- enrichKEGG(
+  gene = entrez_list_CN$ENTREZID,
+  organism = "hsa",
+  universe = background_symbols_entrez,
+  keyType = "kegg",
+  pAdjustMethod = "BH",
+  pvalueCutoff = 0.1,
+  qvalueCutoff = 0.1
+)
+clusterProfiler::dotplot(kegg_res_CN, showCategory = 15) + ggtitle("KEGG Pathways")
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE, fig.height=7, fig.width=7}
+reactome_res_CN <- enrichPathway(
+  gene = entrez_list_CN$ENTREZID,
+  organism = "human",
+  universe = background_symbols_entrez,
+  pAdjustMethod = "BH",
+  pvalueCutoff = 0.1,
+  qvalueCutoff = 0.1,
+  readable = TRUE
+)
+ReactomePA::dotplot(reactome_res_CN, showCategory = 15
+                    #, colorBy = 'pvalue'
+                    ) + ggtitle("Reactome")
+```
+
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
+```
+
+```{r}
+sessionInfo()
+```

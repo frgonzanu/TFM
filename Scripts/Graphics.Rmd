@@ -83,7 +83,7 @@ summary(popData2)
 
 
 ```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
+pheatmap::pheatmap(assay(pb, "counts"))
 ```
 
 ```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}

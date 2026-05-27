@@ -1,0 +1,4 @@
+representation,variable,silhouette_score,n_labels
+X_scVI,region_long,0.01938903145492077,2
+X_scVI,patient,-0.10178828984498978,6
+X_scVI,batch_patient,-0.10178828984498978,6

@@ -22,6 +22,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
 library(dplyr)
 library(ggplot2)
+library(ggrepel)
 library(SingleCellExperiment)
 library(scater)
 library(scuttle)
@@ -47,12 +48,6 @@ rownames(sce) <- rowData(sce)$gene_name
 
 # Exploración de datos
 
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-plotHighestExprs(sce, 
-                 exprs_values = "counts")
-plotHighestExprs(sce, 
-                 exprs_values = "logcounts")
-```
 
 ```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
 vars <- getVarianceExplained(sce,
@@ -60,7 +55,7 @@ vars <- getVarianceExplained(sce,
                                            "region_long",
                                            "Gender", "Age",
                                            "AJCC.Stage", "Primary.Site"),
-                             assay.type = "logcounts")
+                             assay.type = "harmony")
 plotExplanatoryVariables(vars)
 ```
 
@@ -84,42 +79,49 @@ plotExplanatoryVariables(vars)
 
 ## PCA
 
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE, fig.width=10}
 plotReducedDim(sce,
                dimred = "PCA_harmony",
                colour_by = "region_long") +
-  labs(title = "Principal Component Analysis (PCA)") +
-  guides(colour = guide_legend(title = "Region"))
+  labs(title = "PCA - región") +
+  guides(colour = guide_legend(title = "Región"))
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE, fig.width=10}
+plotReducedDim(sce,
+               dimred = "PCA_harmony",
+               colour_by = "patient") +
+  labs(title = "PCA - paciente") +
+  guides(colour = guide_legend(title = "Paciente"))
 ```
 
 
 ## t-SNE
 
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE, fig.width=10}
 sce <- runTSNE(sce, 
                dimred = "PCA",
                # ncomponents = 2, 
                perplexity = 30)
                # max_iter = 2000)
-plotReducedDim(sce,
-               dimred = "TSNE",
-               colour_by = "patient",
-               shape_by = "region_long") +
-  labs(title = "t-SNE with PCA components") +
-  guides(colour = guide_legend(title = "Region"))
 plotTSNE(sce,
-         colour_by = "patient",
-         shape_by = "region_long") +
-  labs(title = "t-SNE with PCA components") +
-  guides(colour = guide_legend(title = "Region"))
+         colour_by = "patient") +
+  labs(title = "t-SNE con PCs - paciente") +
+  guides(colour = guide_legend(title = "Paciente"))
+         
+plotTSNE(sce,
+         colour_by = "region_long") +
+  labs(title = "t-SNE con PCs - región") +
+  guides(colour = guide_legend(title = "Región"))
 
 ```
 
 
 
+
 ## UMAP
 
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE, fig.width=10}
 set.seed(123)
 sce <- runUMAP(sce,
                dimred = "PCA_harmony",
@@ -129,12 +131,34 @@ sce <- runUMAP(sce,
                # metric = "correlation",
                n_epochs = 2000
                )
-plotReducedDim(sce,
-               dimred = "UMAP",
-               colour_by = "patient",
-               shape_by = "region_long") +
-  labs(title = "UMAP with PCA components") +
-  guides(colour = guide_legend(title = "Region"))
+
+plotUMAP(sce,
+         colour_by = "patient") +
+  labs(title = "UMAP con PCs - paciente") +
+  guides(colour = guide_legend(title = "Paciente"))
+
+plotUMAP(sce,
+         colour_by = "region_long") +
+  labs(title = "UMAP con PCs - región") +
+  guides(colour = guide_legend(title = "Región"))
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE, fig.width=15}
+ggcells(sce,
+        mapping = aes(x = UMAP.1,
+                      y = UMAP.2,
+                      colour = region_long)) + 
+  geom_point(alpha = 0.6) + 
+  facet_wrap(~patient) +
+  labs(x = "UMAP 1",
+       y = "UMAP 2",
+       colour = "Región") + 
+  theme_bw() + 
+  theme(axis.text = element_text(size = 12),
+        axis.title = element_text(size = 15),
+        legend.title = element_text(size = 16),
+        legend.text = element_text(size = 13),
+        strip.text = element_text(size = 15))
 ```
 
 
@@ -264,6 +288,97 @@ plotReducedDim(sce[, !is.na(sce$annFull)],
 
 ```
 
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE, fig.width=15}
+ggcells(sce[,!is.na(sce$annFull)],
+        mapping = aes(x = UMAP.1,
+                      y = UMAP.2,
+                      colour = annFull)) + 
+  geom_point(alpha = 0.75,
+             size = 1) + 
+  stat_density2d() + 
+  facet_wrap(~region_long) + 
+  labs(x = "UMAP 1",
+       y = "UMAP 2",
+       colour = "Anotación") +
+  theme_bw() + 
+  theme(axis.text = element_text(size = 12),
+        axis.title = element_text(size = 15),
+        legend.title = element_text(size = 16),
+        legend.text = element_text(size = 13),
+        strip.text = element_text(size = 15))
+```
+
+
+
+## Proporciones celulares
+
+## Cálculo de proporciones celulares por paciente y tejido
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE, fig.width=8, fig.height=7}
+proporcs <- as.data.frame(colData(sce)) %>%
+  filter(!is.na(annFull)) %>%
+  group_by(patient, region_long, annFull) %>%
+  summarise(count = n()) %>%
+  group_by(patient) %>%
+  mutate(proportion_pat = count / sum(count)) %>%
+  ungroup() %>%
+  group_by(region_long) %>%
+  mutate(proportion_reg = count / sum(count)) %>%
+  ungroup()
+
+ggplot(proporcs, 
+       aes(x = region_long, 
+           y = proportion_reg, 
+           fill = annFull)) +
+  geom_bar(stat = "identity", 
+           position = "fill") +
+  labs(title = "Proporción de tipos celulares por región",
+       x = "Localización",
+       y = "Proporción",
+       fill = "Tipo celular") +
+  scale_fill_manual (values = paletteer::paletteer_d("ggsci::category20c_d3")) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+(tabla_RL_ann <- table(
+  sce$annFull,
+  sce$region_long
+  ))
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE, fig.width=7, fig.height=6}
+chi_tab <- chisq.test(tabla_RL_ann)
+print(chi_tab$p.value)
+rcompanion::cramerV(tabla_RL_ann)
+pheatmap::pheatmap(chi_tab$residuals,
+                   cluster_rows = F,
+                   cluster_cols = F,
+                   scale = 'row')
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE, fig.width=10}
+ggplot(proporcs, 
+       aes(x = patient, 
+           y = proportion_pat, 
+           fill = annFull)) +
+  geom_bar(stat = "identity", 
+           position = "fill") +
+  labs(title = "Proporción de tipos celulares por paciente",
+       x = "Localización",
+       y = "Proporción",
+       fill = "Tipo celular") +
+  scale_fill_manual (values = paletteer::paletteer_d("ggsci::category20c_d3")) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+
+### Análisis composicional
+
+
+
+
 ```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE, fig.width=10}
 cao_CN <- run_cacoa_composition(
   sce = sce,
@@ -298,81 +413,6 @@ cao_MH <- run_cacoa_composition(
 )
 cao_MH$plotCellLoadings(show.pvals = T)
 ```
-
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE, fig.width=15}
-ggcells(sce,
-        mapping = aes(x = UMAP.1,
-                      y = UMAP.2,
-                      colour = region_long)) + 
-  geom_point(alpha = 0.75) + 
-  stat_density2d() + 
-  facet_wrap(~annFull) 
-```
-
-
-
-## Proporciones celulares
-
-## Cálculo de proporciones celulares por paciente y tejido
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE, fig.height=8}
-proporcs <- as.data.frame(colData(sce)) %>%
-  filter(!is.na(annFull)) %>%
-  group_by(patient, region_long, annFull) %>%
-  summarise(count = n()) %>%
-  group_by(patient, region_long) %>%
-  mutate(proportion = count / sum(count))
-
-ggplot(proporcs, 
-       aes(x = region_long, 
-           y = proportion, 
-           fill = annFull)) +
-  geom_bar(stat = "identity", 
-           position = "fill") +
-  labs(title = "Proporción de tipos celulares por región",
-       x = "Localización",
-       y = "Proporción",
-       fill = "Tipo celular") +
-  scale_fill_manual (values = paletteer::paletteer_d("ggsci::category20c_d3")) +
-  theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
-
-(tabla_RL_ann <- table(
-  sce$annFull,
-  sce$region_long
-  ))
-
-chi_tab <- chisq.test(tabla_RL_ann)
-print(chi_tab$p.value)
-rcompanion::cramerV(tabla_RL_ann)
-pheatmap::pheatmap(chi_tab$residuals,
-                   cluster_rows = F,
-                   cluster_cols = F,
-                   scale = 'row')
-  
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE, fig.height=8}
-ggplot(proporcs, 
-       aes(x = patient, 
-           y = proportion, 
-           fill = annFull)) +
-  geom_bar(stat = "identity", 
-           position = "fill") +
-  labs(title = "Proporción de tipos celulares por paciente",
-       x = "Localización",
-       y = "Proporción",
-       fill = "Tipo celular") +
-  scale_fill_manual (values = paletteer::paletteer_d("ggsci::category20c_d3")) +
-  theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
-```
-
-
-
-
-
 
 ## Clustering
 
@@ -419,50 +459,86 @@ splsda_res <- splsda(t(assay(sce,
 splsda_df <- data.frame(splsda_res$variates, colData(sce))
 ggplot(data = splsda_df,
        aes(x = X.comp1,
-           y = X.comp3,
-           shape = region_long,
+           y = X.comp2,
+           # shape = region_long,
            color = region_long)) +
   geom_point(alpha = 0.7) + 
   stat_ellipse(level = 0.95,
                show.legend = F) +
-  scale_color_brewer(palette = "Dark2") +
-  labs(title = "sPLS-DA: Components 1 and 3",
+  # scale_color_brewer(palette = "Dark2") +
+  labs(title = "sPLS-DA: Componentes 1 y 2",
        x = "sPLS-DA Component 1",
-       y = "sPLS-DA Component 3")
+       y = "sPLS-DA Component 2") + 
+  theme_bw() +
+  guides(color = guide_legend(title = "Región"))
 ```
 
-Se aprecia que el grupo "Metástasis post-tratamiento" se separa claramente del resto de grupos, lo que sugiere que existen patrones de expresión génica específicos asociados a esta región anatómica. Sin embargo, este tipo de tejido pertenece únicamente al paciente CRC01, y los otros grupos no muestran una separación tan clara. Para evaluar mejor la separación entre los grupos, se podría considerar eliminar el grupo "Metástasis post-tratamiento" para mejorar la posible separación del resto de grupos.
+Se aprecia que el grupo "Metástasis post-tratamiento" se separa del resto de grupos en la dirección positiva de la primera componente discriminante, lo que sugiere que existen patrones de expresión génica específicos asociados a esta región anatómica. Sin embargo, este tipo de tejido pertenece únicamente al paciente CRC01, y los otros grupos no muestran una separación tan clara. Para evaluar mejor la separación entre los grupos de interés, nos quedamos únicamente con los grupos `Tumor Primario` y `Metástasis de Nodo Linfático`.
 
 ```{r}
-splsda_res <- splsda(t(assay(sce[, !(colData(sce)$region_long %in% c("Metastasis post-tratamiento", "Metastasis Higado"))],
+splsda_res <- splsda(t(assay(sce[, !(colData(sce)$region_long %in% c("Metastasis post-tratamiento", "Metastasis Higado", "Colon Normal"))],
                              "harmony")),
-                   colData(sce[, !(colData(sce)$region_long %in% c("Metastasis post-tratamiento", "Metastasis Higado"))])$region_long, 
+                   colData(sce[, !(colData(sce)$region_long %in% c("Metastasis post-tratamiento", "Metastasis Higado", "Colon Normal"))])$region_long, 
                      ncomp = 5,
                      keepX = c(50, 50, 50, 50, 50))
-splsda_df <- data.frame(splsda_res$variates, colData(sce[, !(colData(sce)$region_long %in% c("Metastasis post-tratamiento", "Metastasis Higado"))]))
+splsda_df <- data.frame(splsda_res$variates, colData(sce[, !(colData(sce)$region_long %in% c("Metastasis post-tratamiento", "Metastasis Higado", "Colon Normal"))]))
+
+centroides <- splsda_df %>% 
+  group_by(region_long) %>% 
+  summarise(comp1 = mean(X.comp1), 
+            comp2 = mean(X.comp2))
+
+
 ggplot(data = splsda_df,
        aes(x = X.comp1,
-           y = X.comp3,
-           shape = region_long,
+           y = X.comp2,
+           # shape = region_long,
            color = region_long)) +
   geom_point(alpha = 0.7) + 
   stat_ellipse(level = 0.95,
                show.legend = F) +
   scale_color_brewer(palette = "Dark2") +
-  labs(title = "sPLS-DA: Components 1 and 3",
+  labs(title = "sPLS-DA: Componentes 1 y 2",
        x = "sPLS-DA Component 1",
-       y = "sPLS-DA Component 3")
+       y = "sPLS-DA Component 2",
+       color = "Región") + 
+  geom_point(data = centroides, 
+             aes(x = comp1, y = comp2),
+             shape = 4, size = 4, col = "black", 
+             show.legend = F) +
+  theme_bw()
 
-plotIndiv(splsda_res, 
-          comp = c(1,3),
-          group = colData(sce[, (colData(sce)$region_long != "Metastasis post-tratamiento" )])$region_long, 
-          legend = TRUE,
-          ellipse = TRUE,
-          title = "sPLS-DA")
+vip_sPLSDA <- vip(splsda_res) %>% as.data.frame() %>% arrange(desc(comp1))
 
-vip_sPLSDA <- vip(splsda_res)
-vip_sPLSDA <- vip_sPLSDA %>% as.data.frame() %>% arrange(desc(comp1))
-top15_vip_sPLSDA <- vip_sPLSDA %>% head(15)
+(main_vip_genes <- data.frame(GENE_COMP1 = rownames(vip_sPLSDA %>% arrange(desc(comp1)) %>% head(50)),
+                             GENE_COMP2 = rownames(vip_sPLSDA %>% arrange(desc(comp2)) %>% head(50)))) %>%
+  gt::gt() %>%
+  gt::tab_header(title = "Top 50 genes VIP por componente") %>%
+  gt::cols_label(GENE_COMP1 = "Componente 1",
+                 GENE_COMP2 = "Componente 2") %>%
+  gt::tab_options(table.font.size = "small") 
+
+(genes_comp1_2 <- vip_sPLSDA[base::intersect(main_vip_genes$GENE_COMP1, main_vip_genes$GENE_COMP2),c("comp1", "comp2")]) %>%
+  ggplot(aes(x = comp1, y = comp2)) +
+  geom_point() +
+  geom_text_repel(aes(label = rownames(genes_comp1_2)),
+                  size = 3,
+                  max.overlaps = 10) +
+  labs(title = "Genes VIP en componentes 1 y 2",
+       x = "VIP Componente 1",
+       y = "VIP Componente 2") +
+  theme_minimal()
+
+genes_comp1_2 %>%
+  tibble::rownames_to_column(var = "genes") %>%
+  gt::gt() %>%
+  gt::tab_header(title = "Intersección de top 50 genes VIP en componentes 1 y 2") %>%
+  gt::cols_label(genes = "Genes",
+                 comp1 = "VIP Componente 1",
+                 comp2 = "VIP Componente 2") %>%
+  gt::tab_options(table.font.size = "small")
+
+
 
 openxlsx::write.xlsx(vip_sPLSDA,
                      "../Results/VIP_sPLSDA.xlsx",

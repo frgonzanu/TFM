@@ -37,7 +37,7 @@ conflicted::conflict_prefer("rename", "dplyr")
 sce_raw <- readRDS("../Datos/sce_raw.rds")
 sce2 <- readRDS("../Datos/sce_2.rds")
 # sce_raw <- sce_raw[, colnames(sce_raw) %in% colnames(sce2[,sce2$annMid %in% c("Epi", "EpiT")])]
-sce_raw <- sce_raw[, colnames(sce_raw) %in% colnames(sce2[,sce2$cellAnnot == "Epithelial_cells"])]
+sce_raw <- sce_raw[, colnames(sce_raw) %in% colnames(sce2[, sce2$cellAnnot == "Epithelial_cells"])]
 rm(sce2)
 ```
 
@@ -67,8 +67,24 @@ pb$patient <- droplevels(pb$patient)
 pb$region_long <- factor(pb$region_long)
 pb$region_long <- droplevels(pb$region_long)
 pb$region_long <- relevel(pb$region_long, ref = "Tumor Primario")
-
 ```
+
+## PCA
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE, fig.width=6}
+pb <- logNormCounts(pb)
+pb <- runPCA(pb)
+plotPCA(pb,
+        colour_by = "region_long",
+        shape_by = "patient") +
+  theme_minimal() +
+  labs(title = "PCA de pseudo-bulk",
+       x = "PC1",
+       y = "PC2") +
+  guides(colour = guide_legend(title = "Región"),
+         shape = guide_legend(title = "Paciente"))
+```
+
 
 # Análisis diferencial
 
@@ -176,8 +192,8 @@ MNL <- tab_NL_PT %>%
 MNL <- MNL %>%
   mutate(
     sig = case_when(
-      logFC > 1 & log10FDR > -log10(0.05) ~ "UP",
-      logFC < -1 & log10FDR > -log10(0.05) ~ "DOWN",
+      logFC > 1 & log10pvalue > -log10(0.05) ~ "UP",
+      logFC < -1 & log10pvalue > -log10(0.05) ~ "DOWN",
       TRUE ~ "NOT SIG."
     ),
     sig = factor(sig, levels = c("UP", "DOWN", "NOT SIG.")),
@@ -187,7 +203,7 @@ MNL <- MNL %>%
 
 ggplot(MNL, 
        aes(x = logFC, 
-           y = log10FDR, 
+           y = log10pvalue, 
            color = sig)) +
   geom_point() +
   scale_color_manual(values = c("UP" = "red", 
@@ -196,7 +212,7 @@ ggplot(MNL,
   theme_minimal() + 
   labs(title = "Volcano Plot: Metástasis Nodo Linfático vs Tumor Primario",
        x = "log Fold Change",
-       y = "-log10(FDR)") +
+       y = "-log10(pvalue)") +
   geom_text_repel(aes(label = gene_label),
                   size = 3,
                   max.overlaps = 10,
@@ -235,8 +251,8 @@ CN <- tab_PT_CN %>%
 CN <- CN %>%
   mutate(
     sig = case_when(
-      logFC > 1 & log10FDR > -log10(0.05) ~ "UP",
-      logFC < -1 & log10FDR > -log10(0.05) ~ "DOWN",
+      logFC > 1 & log10pvalue > -log10(0.05) ~ "UP",
+      logFC < -1 & log10pvalue > -log10(0.05) ~ "DOWN",
       TRUE ~ "NOT SIG."
     ),
     sig = factor(sig, levels = c("UP", "DOWN", "NOT SIG.")),
@@ -246,7 +262,7 @@ CN <- CN %>%
 
 ggplot(CN, 
        aes(x = logFC, 
-           y = log10FDR, 
+           y = log10pvalue, 
            color = sig)) +
   geom_point() +
   scale_color_manual(values = c("UP" = "red", 
@@ -255,7 +271,7 @@ ggplot(CN,
   theme_minimal() + 
   labs(title = "Volcano Plot: Tumor Primario vs. Colon Normal",
        x = "log Fold Change",
-       y = "-log10(FDR)") +
+       y = "-log10(pvalue)") +
   geom_text_repel(aes(label = gene_label),
                   size = 3,
                   max.overlaps = 10,

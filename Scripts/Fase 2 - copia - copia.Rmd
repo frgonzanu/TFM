@@ -31,13 +31,15 @@ library(edgeR)
 conflicted::conflict_prefer("select", "dplyr")
 conflicted::conflict_prefer("filter", "dplyr")
 conflicted::conflict_prefer("rename", "dplyr")
+
+source("Functions/contraste.R")
 ```
 
 ```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
 sce_raw <- readRDS("../Datos/sce_raw.rds")
 sce2 <- readRDS("../Datos/sce_2.rds")
 # sce_raw <- sce_raw[, colnames(sce_raw) %in% colnames(sce2[,sce2$annMid %in% c("Epi", "EpiT")])]
-sce_raw <- sce_raw[, colnames(sce_raw) %in% colnames(sce2[,sce2$cellAnnot == "Epithelial_cells"])]
+sce_raw <- sce_raw[, colnames(sce_raw) %in% colnames(sce2[, sce2$cellAnnot == "Epithelial_cells"])]
 rm(sce2)
 ```
 
@@ -48,9 +50,8 @@ Nos interesa hacer agreación por paciente y tejido.
 sce_raw$pb_ids <- paste(sce_raw$patient,
                     sce_raw$region_long,
                     sep = "_")
-```
 
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+
 pb <- aggregateAcrossCells(
   sce_raw,
   ids = sce_raw$pb_ids,
@@ -59,226 +60,163 @@ pb <- aggregateAcrossCells(
 ```
 
 ```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-pb <- pb[, !(pb$region_long %in% c("Metastasis post-tratamiento"))]
-# pb <- pb[, (!pb$patient %in% c("CRC01", "CRC02"))]
-# pb <- pb[, pb$region_long %in% c("Colon Normal", "Tumor Primario", "Metastasis Nodo Linfático")]
+#excluimos metastasis post-tratamiento porque solo tendría una pseudo-muestra
+# pb <- pb[, !(pb$region_long %in% c("Metastasis post-tratamiento"))]
+pb <- pb[, !(pb$patient %in% c("CRC01", "CRC02"))]
+
 pb$patient <- factor(pb$patient)
 pb$patient <- droplevels(pb$patient)
+
 pb$region_long <- factor(pb$region_long)
 pb$region_long <- droplevels(pb$region_long)
 pb$region_long <- relevel(pb$region_long, ref = "Tumor Primario")
-
 ```
 
-# Análisis diferencial
+## PCA
 
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-y <- DGEList(counts = assay(pb, "counts"))
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE, fig.width=6}
+pb <- logNormCounts(pb)
+pb <- runPCA(pb)
+plotPCA(pb,
+        shape_by = "region_long",
+        colour_by = "patient") +
+  theme_minimal() +
+  labs(title = "PCA de pseudo-bulk",
+       x = "PC1",
+       y = "PC2") +
+  guides(shape = guide_legend(title = "Región"),
+         colour = guide_legend(title = "Paciente"))
+table(pb$patient, pb$region_long)
+saveRDS(pb, "../Datos/pb.rds")
 ```
 
+#Análisis de expresión diferencial
 
-## Diseño
 
-Al poner la fórmula `~ patient`, esto debe recoger el *batch* debido a que éste está fuertemente asociado a pacientes (TAN = CRC01 y CRC02).
 
 ```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-design <- model.matrix(~ patient + region_long, 
-                       data = colData(pb))
-```
+targets <- base::setdiff(
+  levels(pb$region_long),
+  "Tumor Primario"
+)
 
+all_results <- list()
 
-## Filtrado de genes
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-keep <- filterByExpr(y, 
-                     min.count = 10,
-                     min.total.count = 15,
-                     design = design)
-y <- y[keep, , keep.lib.sizes = F]
-```
-
-## Normalización
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-y <- calcNormFactors(y)
-```
-
-
-
-## Ajuste del modelo
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-y <- estimateDisp(y, 
-                  design)
-fit <- glmQLFit(y,
-design)
-```
-
-## Cálculo de expresión diferencial
-
-### Iteración sobre coeficientes
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-# res_NL_PT <- glmQLFTest(fit,
-#                         coef = "region_longMetastasis Nodo Linfático")
-res_NL_PT <- glmTreat(fit,
-                      coef = "region_longMetastasis Nodo Linfático",
-                      lfc = log2(1.5))
-tab_NL_PT <- topTags(res_NL_PT,
-                        n = Inf)$table %>%
-  tibble::rownames_to_column(var = "gene_id")
-tab_NL_PT <- tab_NL_PT %>%
-  mutate(gene_name = rowData(pb)$gene_name[match(tab_NL_PT$gene_id,
-                                                   rownames(pb))])
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-pb$region_long <- relevel(pb$region_long, ref = "Colon Normal")
-design_CN <- model.matrix(~ region_long,
-                       data = colData(pb))
-# y_CN <- estimateDisp(y,
-                  # design_CN)
-fit_CN <- glmQLFit(y,
-                   design_CN)
-
-
-res_PT_CN <- glmTreat(fit_CN,
-                      coef = "region_longTumor Primario",
-                      lfc = log2(1.5))
-# res_PT_CN <- glmQLFTest(fit_CN,lof10()
-#                         coef = "region_longTumor Primario")
-tab_PT_CN <- topTags(res_PT_CN,
-                        n = Inf)$table %>%
-  tibble::rownames_to_column(var = "gene_id")
-tab_PT_CN <- tab_PT_CN %>%
-  mutate(gene_name = rowData(pb)$gene_name[match(tab_PT_CN$gene_id,
-                                                   rownames(pb))])
-```
-
-
-
-
-
-# Identificación de genes potenciales para firma metastásica
-
-## Metástasis de nodo linfático vs. Tumor primario
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-MNL <- tab_NL_PT %>%
-  mutate(
-    log10FDR = -log10(FDR),
-    log10pvalue = -log10(PValue)
-  )
-```
-
-### Volcano plot
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-MNL <- MNL %>%
-  mutate(
-    sig = case_when(
-      logFC > 1 & log10FDR > -log10(0.05) ~ "UP",
-      logFC < -1 & log10FDR > -log10(0.05) ~ "DOWN",
-      TRUE ~ "NOT SIG."
-    ),
-    sig = factor(sig, levels = c("UP", "DOWN", "NOT SIG.")),
-    gene_label = ifelse(sig != "NOT SIG.", gene_name, "")
-  )
-
-
-ggplot(MNL, 
-       aes(x = logFC, 
-           y = log10FDR, 
-           color = sig)) +
-  geom_point() +
-  scale_color_manual(values = c("UP" = "red", 
-                                "DOWN" = "green", 
-                                "NOT SIG." = "grey")) +
-  theme_minimal() + 
-  labs(title = "Volcano Plot: Metástasis Nodo Linfático vs Tumor Primario",
-       x = "log Fold Change",
-       y = "-log10(FDR)") +
-  geom_text_repel(aes(label = gene_label),
-                  size = 3,
-                  max.overlaps = 10,
-                  show.legend = F) +
-  geom_hline(yintercept = -log10(0.05), 
-             linetype = "dashed", 
-             col = "black") +
-  geom_vline(xintercept = c(-1, 1), 
-             linetype = "dashed",
-             col = "black") +
-  theme(legend.title = element_blank())
+for (target in targets) {
   
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-candidates_NL_PT <- MNL %>%
-  filter(sig != "NOT SIG.") %>%
-  pull(gene_name)
-# write.csv(candidates_NL_PT, "../Results/candidates_NL_PT.csv", row.names = F, col.names = F)
-```
-
-
-## Exploratorio: Tumor Primario vs. Colon Normal
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-CN <- tab_PT_CN %>%
-  mutate(
-    log10FDR = -log10(FDR),
-    log10pvalue = -log10(PValue)
-  )
-```
-
-### Volcano plot
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-CN <- CN %>%
-  mutate(
-    sig = case_when(
-      logFC > 1 & log10FDR > -log10(0.05) ~ "UP",
-      logFC < -1 & log10FDR > -log10(0.05) ~ "DOWN",
-      TRUE ~ "NOT SIG."
-    ),
-    sig = factor(sig, levels = c("UP", "DOWN", "NOT SIG.")),
-    gene_label = ifelse(sig != "NOT SIG.", gene_name, "")
-  )
-
-
-ggplot(CN, 
-       aes(x = logFC, 
-           y = log10FDR, 
-           color = sig)) +
-  geom_point() +
-  scale_color_manual(values = c("UP" = "red", 
-                                "DOWN" = "green", 
-                                "NOT SIG." = "grey")) +
-  theme_minimal() + 
-  labs(title = "Volcano Plot: Tumor Primario vs. Colon Normal",
-       x = "log Fold Change",
-       y = "-log10(FDR)") +
-  geom_text_repel(aes(label = gene_label),
-                  size = 3,
-                  max.overlaps = 10,
-                  show.legend = F) +
-  geom_hline(yintercept = -log10(0.05), 
-             linetype = "dashed", 
-             col = "black") +
-  geom_vline(xintercept = c(-1, 1), 
-             linetype = "dashed",
-             col = "black") +
-  theme(legend.title = element_blank())
+  cat("\nAnalizando contraste: ", target, " vs Tumor Primario\n")
   
+  tab <- contraste_pb(
+    pb = pb,
+    target = target,
+    ref = "Tumor Primario",
+    lfc = log2(1.5),
+    robust = T
+  )
+  
+  suffix <- make.names(target)
+  
+  tab <- tab %>%
+    rename_with(
+      .fn = ~ paste0(.x, "_", suffix),
+      .cols = -gene_id
+    )
+  
+  all_results[[target]] <- tab
+}
+#fusionamos resultados
+de_merged <- purrr::reduce(all_results,
+                           full_join,
+                           by = "gene_id")
+
+#se añade gene symbol
+de_merged <- de_merged %>%
+  mutate(
+    gene_name = rowData(pb)$gene_name[match(de_merged$gene_id,
+                                                   rownames(pb))]
+    ) %>%
+  select(gene_id, gene_name, everything(),
+         -starts_with("unshrunk"))
+
+write.csv(de_merged, "../Results/DE_pseudobulk.csv", row.names = FALSE)
 ```
 
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-candidates_TP_NC <- CN %>%
-  filter(sig != "NOT SIG.") %>%
-  pull(gene_name)
-# write.csv(candidates_TP_NC, "../Results/candidates_TP_NC.csv", row.names = F)
+# Volcano plots
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE, fig.width=10}
+for(target in targets){
+  suffix <- make.names(target)
+  
+  tab <- de_merged %>%
+    select(gene_id, gene_name, 
+           paste0("logFC_", suffix),
+           paste0("FDR_", suffix),
+           paste0("PValue_", suffix)) %>%
+    rename(logFC = paste0("logFC_", suffix),
+           FDR = paste0("FDR_", suffix),
+           PValue = paste0("PValue_", suffix))
+
+  tab <- tab %>%
+    mutate(
+      log10FDR = -log10(FDR),
+      sig = case_when(
+        logFC > 1 & log10FDR > -log10(0.05) ~ "UP",
+        logFC < -1 & log10FDR > -log10(0.05) ~ "DOWN",
+        TRUE ~ "NS"
+      ),
+      tag = case_when(
+        sig != "NS" ~ gene_name,
+        TRUE ~ NA_character_
+      ))
+      
+  p <- ggplot(tab, 
+              aes(x = logFC, 
+                  y = log10FDR)) +
+    geom_point(aes(color = sig), 
+               alpha = 0.6) +
+    scale_color_manual(values = c("UP" = "#E69F00", 
+                                  "DOWN" = "#56B4E9", 
+                                  "NS" = "grey60")) +
+    geom_vline(xintercept = c(-1, 1), 
+               linetype = "dashed", 
+               color = "black") +
+    geom_hline(yintercept = -log10(0.05), 
+               linetype = "dashed", 
+               color = "black") +
+    geom_text_repel(aes(label = tag),
+                    size = 3,
+                    max.overlaps = 10,
+                    show.legend = FALSE) +
+    theme_minimal() +
+    labs(title = paste("Volcano plot:", 
+                       target, "vs Tumor Primario"),
+         x = "Log2 Fold Change",
+         y = "-Log10 pValue") +
+    theme(legend.title = element_blank())
+  
+  print(p)
+    
+  }
+
 ```
+
+```{r, message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+de_merged %>%
+  filter(!is.na(logFC_Metastasis.Nodo.Linfático)) %>%
+  filter(PValue_Metastasis.Nodo.Linfático < 0.05) %>%
+  arrange(desc(logFC_Metastasis.Nodo.Linfático)) %>%
+  pull(gene_name) %>%
+  write.csv("../Results/candidates_NL_PT.csv", row.names = F, col.names = F)
+
+de_merged %>%
+  filter(!is.na(logFC_Colon.Normal)) %>%
+  filter(PValue_Colon.Normal < 0.05) %>%
+  arrange(desc(logFC_Colon.Normal)) %>%
+  pull(gene_name) %>%
+  write.csv("../Results/candidates_TP_NC.csv", row.names = F, col.names = F)
+```
+
 
 ```{r}
 sessionInfo()
 ```
-

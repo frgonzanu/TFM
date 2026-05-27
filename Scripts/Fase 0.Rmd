@@ -208,6 +208,13 @@ saveRDS(sce_qc,
 sce_qc <- logNormCounts(sce_qc)
 ```
 
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+plotHighestExprs(sce_qc, 
+                 exprs_values = "counts")
+plotHighestExprs(sce_qc, 
+                 exprs_values = "logcounts")
+```
+
 # Filtrado por HVGs
 
 ```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}

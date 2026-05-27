@@ -159,9 +159,6 @@ def compute_silhouette_scores(adata, representation_key, output_prefix):
         index=False
     )
 
-    print(f"\nSilhouette scores para {representation_key}:")
-    print(df)
-
     return df
 
 """
@@ -177,28 +174,28 @@ print("\n############################################################")
 adata_scvi = load_and_prepare_anndata(input_h5ad)
 
 setup_model_anndata(
-    model_class=scvi.model.SCVI,
-    adata=adata_scvi,
-    use_patient_covariate=True
+    model_class = scvi.model.SCVI,
+    adata = adata_scvi,
+    use_patient_covariate = True
 )
 
 model_scvi = scvi.model.SCVI(
     adata_scvi,
-    n_latent=n_latent,
-    gene_likelihood=gene_likelihood
+    n_latent = n_latent,
+    gene_likelihood = gene_likelihood
 )
 
 model_scvi.train(
-    max_epochs=max_epochs,
-    early_stopping=True
+    max_epochs = max_epochs,
+    early_stopping = True
 )
 
 adata_scvi.obsm["X_scVI"] = model_scvi.get_latent_representation()
 
 latent_scvi = pd.DataFrame(
     adata_scvi.obsm["X_scVI"],
-    index=adata_scvi.obs_names,
-    columns=[f"scVI_{i+1}" for i in range(adata_scvi.obsm["X_scVI"].shape[1])]
+    index = adata_scvi.obs_names,
+    columns = [f"scVI_{i+1}" for i in range(adata_scvi.obsm["X_scVI"].shape[1])]
 )
 
 latent_scvi.to_csv(
@@ -207,12 +204,12 @@ latent_scvi.to_csv(
 
 model_scvi.save(
     os.path.join(out_dir, "model_scVI_TPNL_patient_covariate"),
-    overwrite=True
+    overwrite = True
 )
 
 sc.pp.neighbors(
     adata_scvi,
-    use_rep="X_scVI"
+    use_rep = "X_scVI"
 )
 
 sc.tl.umap(adata_scvi)
@@ -220,64 +217,22 @@ sc.tl.umap(adata_scvi)
 adata_scvi.obsm["X_umap_scVI"] = adata_scvi.obsm["X_umap"].copy()
 
 save_umaps(
-    adata=adata_scvi,
-    basis="umap_scVI",
-    prefix="umap_scVI_TPNL_patient_covariate",
-    out_dir=out_dir
+    adata = adata_scvi,
+    basis = "umap_scVI",
+    prefix = "umap_scVI_TPNL_patient_covariate",
+    out_dir = out_dir
 )
 
 compute_silhouette_scores(
-    adata=adata_scvi,
-    representation_key="X_scVI",
-    output_prefix="scVI_TPNL_patient_covariate"
+    adata = adata_scvi,
+    representation_key = "X_scVI",
+    output_prefix = "scVI_TPNL_patient_covariate"
 )
 
-"""
-============================================================
-2. scVI: DE exploratoria por region_long
-============================================================
-"""
-
-print("\n\n#########################")
-print("\nDE EXPLORATORIA CON scVI")
-print("\#########################")
-
-region_categories = list(adata_scvi.obs["region_long"].cat.categories)
-print("\nCategorías en region_long:")
-print(region_categories)
-
-comparisons = []
-
-if primary_label in region_categories:
-    for group in region_categories:
-        if group != primary_label:
-            comparisons.append((group, primary_label))
-else:
-    print(f"\nno se encuentra primary_label='{primary_label}' en region_long")
-
-for group1, group2 in comparisons:
-    if group1 in region_categories and group2 in region_categories:
-        print(f"\nCalculando DE scVI: {group1} vs {group2}")
-
-        de = model_scvi.differential_expression(
-            adata=adata_scvi,
-            groupby="region_long",
-            group1=group1,
-            group2=group2
-        )
-
-        safe_group1 = sanitize_filename(group1)
-        safe_group2 = sanitize_filename(group2)
-
-        de.to_csv(
-            os.path.join(out_dir, f"DE_scVI_{safe_group1}_vs_{safe_group2}.csv")
-        )
-    else:
-        print(f"\nno se encuentra: {group1} o {group2}")
 
 """
 ============================================================
-3. LDVAE / LinearSCVI
+2. LDVAE / LinearSCVI
 ============================================================
 """
 
@@ -288,27 +243,27 @@ print("###################################")
 adata_ldvae = load_and_prepare_anndata(input_h5ad)
 
 setup_model_anndata(
-    model_class=scvi.model.LinearSCVI,
-    adata=adata_ldvae,
-    use_patient_covariate=True
+    model_class = scvi.model.LinearSCVI,
+    adata = adata_ldvae,
+    use_patient_covariate = True
 )
 
 model_ldvae = scvi.model.LinearSCVI(
     adata_ldvae,
-    n_latent=n_latent,
-    gene_likelihood=gene_likelihood
+    n_latent = n_latent,
+    gene_likelihood = gene_likelihood
 )
 
 model_ldvae.train(
-    max_epochs=max_epochs,
-    early_stopping=True
+    max_epochs = max_epochs,
+    early_stopping = True
 )
 
 adata_ldvae.obsm["X_LDVAE"] = model_ldvae.get_latent_representation()
 
 latent_ldvae = pd.DataFrame(
     adata_ldvae.obsm["X_LDVAE"],
-    index=adata_ldvae.obs_names,
+    index = adata_ldvae.obs_names,
     columns=[f"LDVAE_{i+1}" for i in range(adata_ldvae.obsm["X_LDVAE"].shape[1])]
 )
 
@@ -323,13 +278,13 @@ model_ldvae.save(
 
 """
 ============================================================
-4. Loadings de LDVAE
+3. Loadings de LDVAE
 ============================================================
 """
 
-print("\n\n############################################################")
+print("\n\n########################")
 print("EXTRAYENDO LOADINGS DE LDVAE")
-print("############################################################")
+print("############################")
 
 loadings = model_ldvae.get_loadings()
 
@@ -338,8 +293,8 @@ if isinstance(loadings, pd.DataFrame):
 else:
     loadings_df = pd.DataFrame(
         loadings,
-        index=adata_ldvae.var_names,
-        columns=[f"LDVAE_{i+1}" for i in range(loadings.shape[1])]
+        index = adata_ldvae.var_names,
+        columns = [f"LDVAE_{i+1}" for i in range(loadings.shape[1])]
     )
 
 loadings_df.to_csv(
@@ -360,12 +315,12 @@ top_genes_ldvae = pd.concat(top_genes_all, axis=0)
 
 top_genes_ldvae.to_csv(
     os.path.join(out_dir, "LDVAE_TPNL_patient_covariate_top50_genes_per_factor.csv"),
-    index=False
+    index = False
 )
 
 """
 ============================================================
-5. Top genes positivos y negativos por factor LDVAE
+3.2. Top genes positivos y negativos por factor LDVAE
 ============================================================
 """
 
@@ -374,30 +329,30 @@ for factor in loadings_df.columns:
     tmp["gene"] = tmp.index
     tmp["abs_loading"] = tmp[factor].abs()
 
-    top_pos = tmp.sort_values(factor, ascending=False).head(50)
-    top_neg = tmp.sort_values(factor, ascending=True).head(50)
-    top_abs = tmp.sort_values("abs_loading", ascending=False).head(100)
+    top_pos = tmp.sort_values(factor, ascending = False).head(50)
+    top_neg = tmp.sort_values(factor, ascending = True).head(50)
+    top_abs = tmp.sort_values("abs_loading", ascending = False).head(100)
 
     safe_factor = sanitize_filename(factor)
 
     top_pos.to_csv(
         os.path.join(out_dir, f"{safe_factor}_top50_positive_loadings.csv"),
-        index=False
+        index = False
     )
 
     top_neg.to_csv(
         os.path.join(out_dir, f"{safe_factor}_top50_negative_loadings.csv"),
-        index=False
+        index = False
     )
 
     top_abs.to_csv(
         os.path.join(out_dir, f"{safe_factor}_top100_abs_loadings.csv"),
-        index=False
+        index = False
     )
 
 """
 ============================================================
-6. Relación factores LDVAE - tejido
+4. Relación factores LDVAE - tejido
 ============================================================
 """
 
@@ -407,8 +362,8 @@ print("################################")
 
 ldvae_df = pd.DataFrame(
     adata_ldvae.obsm["X_LDVAE"],
-    index=adata_ldvae.obs_names,
-    columns=[f"LDVAE_{i+1}" for i in range(adata_ldvae.obsm["X_LDVAE"].shape[1])]
+    index = adata_ldvae.obs_names,
+    columns = [f"LDVAE_{i+1}" for i in range(adata_ldvae.obsm["X_LDVAE"].shape[1])]
 )
 
 metadata_cols = ["region_long", "patient"]
@@ -439,12 +394,12 @@ summary_by_patient_region = (
 
 summary_by_patient_region.to_csv(
     os.path.join(out_dir, "LDVAE_TPNL_patient_covariate_factor_means_by_patient_region.csv"),
-    index=False
+    index = False
 )
 
 """
 ============================================================
-7. Boxplots LDVAE por región
+5. Boxplots LDVAE por región
 ============================================================
 """
 
@@ -459,23 +414,23 @@ for factor in factor_cols:
     plt.figure(figsize=(6, 4))
 
     sns.boxplot(
-        data=ldvae_df,
-        x="region_long",
-        y=factor,
-        order=region_order if len(region_order) > 0 else None
+        data = ldvae_df,
+        x = "region_long",
+        y = factor,
+        order = region_order if len(region_order) > 0 else None
     )
 
     sns.stripplot(
-        data=ldvae_df,
-        x="region_long",
-        y=factor,
+        data = ldvae_df,
+        x = "region_long",
+        y = factor,
         order=region_order if len(region_order) > 0 else None,
-        color="black",
-        alpha=0.4,
-        size=2
+        color = "black",
+        alpha = 0.4,
+        size = 2
     )
 
-    plt.xticks(rotation=45, ha="right")
+    plt.xticks(rotation = 45, ha = "right")
     plt.title(f"{factor} by tissue region")
     plt.tight_layout()
 
@@ -483,14 +438,14 @@ for factor in factor_cols:
 
     plt.savefig(
         os.path.join(out_dir, f"boxplot_TPNL_patient_covariate_{safe_factor}_by_region.png"),
-        dpi=300
+        dpi = 300
     )
 
     plt.close()
 
 """
 ============================================================
-8. UMAP LDVAE
+6. UMAP LDVAE
 ============================================================
 """
 
@@ -500,33 +455,33 @@ print("##########")
 
 sc.pp.neighbors(
     adata_ldvae,
-    use_rep="X_LDVAE",
-    key_added="neighbors_LDVAE"
+    use_rep = "X_LDVAE",
+    key_added = "neighbors_LDVAE"
 )
 
 sc.tl.umap(
     adata_ldvae,
-    neighbors_key="neighbors_LDVAE"
+    neighbors_key = "neighbors_LDVAE"
 )
 
 adata_ldvae.obsm["X_umap_LDVAE"] = adata_ldvae.obsm["X_umap"].copy()
 
 save_umaps(
-    adata=adata_ldvae,
-    basis="umap_LDVAE",
-    prefix="umap_LDVAE_TPNL_patient_covariate",
-    out_dir=out_dir
+    adata = adata_ldvae,
+    basis = "umap_LDVAE",
+    prefix = "umap_LDVAE_TPNL_patient_covariate",
+    out_dir = out_dir
 )
 
 compute_silhouette_scores(
-    adata=adata_ldvae,
-    representation_key="X_LDVAE",
-    output_prefix="LDVAE_TPNL_patient_covariate"
+    adata = adata_ldvae,
+    representation_key = "X_LDVAE",
+    output_prefix = "LDVAE_TPNL_patient_covariate"
 )
 
 """
 ============================================================
-9. Guardar AnnData finales
+7. Guardar AnnData finales
 ============================================================
 """
 

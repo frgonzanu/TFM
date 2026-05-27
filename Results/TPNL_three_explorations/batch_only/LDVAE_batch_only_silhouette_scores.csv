@@ -1,0 +1,3 @@
+representation,variable,silhouette_score,n_labels
+X_LDVAE,region_long,0.018810909241437912,2
+X_LDVAE,patient,0.07183452695608139,6

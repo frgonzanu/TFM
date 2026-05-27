@@ -13,9 +13,6 @@ for f in files:
     
     df = pd.read_csv(f, sep="\t", header=None)
     
-    # quitar líneas resumen
-    df = df.iloc[4:]
-    
     df.columns = ["gene", "unstranded", "strand_plus", "strand_minus"]
     
     # usar solo unstranded

@@ -1,0 +1,168 @@
+---
+title: "Fase 4.2 - Análisis inferencial de vías y factores de transcripción"
+author: "Francisco Manuel González Nuño"
+output:
+  html_document:
+    toc: true              
+    toc_depth: 2
+    toc_float: true        
+    number_sections: true  
+    theme: cosmo           
+    highlight: tango       
+    code_folding: "show"   
+    code_download: true    
+    df_print: paged        
+    self_contained: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+library(dplyr)
+library(SingleCellExperiment)
+library(progeny)
+library(clusterProfiler)
+library(enrichplot)
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+pb <- readRDS("../Datos/pb.rds")
+```
+
+## Filtramos
+
+Filtramos por pseudomuestras: necesitamos que los pcientes tengan muestras tanto de tumor primario como de metástasis:
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+table(pb$patient, pb$region_long)
+```
+
+
+```{r, message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+pb <- pb[, pb$patient %in% c("CRC04",
+                             "CRC06", 
+                             "CRC10", 
+                             "CRC11") &
+           pb$region_long %in% c("Tumor Primario", 
+                                 "Metastasis Nodo Linfático")]
+pb$patient <- droplevels(pb$patient)
+pb$region_long <- droplevels(pb$region_long)
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+# función para calcular proporción por grupo
+prop_by_group <- sapply(levels(pb$region_long), 
+                        function(g){
+                          rowMeans(counts(pb)[, pb$region_long == g] > 0)})
+
+# genes expresados en ≥ 50% en ambos grupos
+keep <- apply(prop_by_group, 1, function(x) all(x >= 0.5))
+
+pb_filt <- pb[keep, ]
+```
+
+
+# Progeny
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+# PROGENy espera por defecto un assay denominado "normcounts";
+# se utilizan los valores log-normalizados del pseudobulk.
+assay(pb_filt, "normcounts") <- assay(pb_filt, "logcounts")
+rownames(pb_filt) <- rowData(pb_filt)$gene_name
+pb_filt <- pb_filt[!duplicated(rownames(pb_filt)),]
+
+res_progeny <- progeny(pb_filt, 
+                      scale = F, 
+                      organism = "Human", 
+                      top = 100, 
+                      perm = 50)
+
+annot_col <- list(
+  Grupo = c(
+    "Tumor Primario" = rgb(217/255,97/255,2/255),     # verde
+    "Metastasis Nodo Linfático" = rgb(109/255,104/255,175/255)    # rojo
+  )
+)
+
+res_progeny <- res_progeny[order(grepl("Primario", rownames(res_progeny)), 
+                                 grepl("Metastasis", rownames(res_progeny))), ]
+
+annot_row <- data.frame(Grupo = pb_filt$region_long)
+rownames(annot_row) <- make.names(colnames(pb_filt))
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE, fig.width=12}
+pheatmap::pheatmap(res_progeny, 
+                   # scale = "column",
+                    cluster_rows = F,
+                    cluster_cols = F,
+                   annotation_row = annot_row,
+                   annotation_colors = annot_col,
+                   main = "PROGENy - Pathway activity",
+                   fontsize_row = 10,
+                   fontsize_col = 10)
+```
+
+#DoRothEA
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+# regulons <- decoupleR::get_dorothea(organism = "human", 
+#                          levels = c("A",  "B"))
+regulons <- dorothea::dorothea_hs %>%
+  filter(confidence %in% c("A", "B"))
+
+regulons_filt <- regulons %>%
+  filter(target %in% rownames(pb_filt)) %>%
+  group_by(tf) %>%
+  filter(n() >= 5)  # mínimo 5 targets por TF
+
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+tf_activities <- decoupleR::run_viper(
+  mat = logcounts(pb_filt),
+  network = regulons_filt,
+  .source = "tf",
+  .target = "target",
+  .mor = "mor",
+  method = "scale"
+)
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
+tf_act_df <- tf_activities %>%
+  select(source, condition, score) %>%
+  tidyr::pivot_wider(names_from = condition, values_from = score) %>%
+  as.data.frame()
+
+rownames(tf_act_df) <- tf_act_df$source
+tf_act_df$source <- NULL
+
+tf_matrix <- as.matrix(tf_act_df)
+as.data.frame(tf_matrix) %>% select(ends_with("Primario"), everything()) %>% as.matrix -> tf_matrix
+```
+
+```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE, fig.height=20, fig.width=7}
+annot_row <- data.frame(Grupo = case_when(
+  grepl("Primario", colnames(tf_matrix)) ~ "Tumor Primario",
+  TRUE ~ "Metastasis Nodo Linfático"
+))
+rownames(annot_row) <- colnames(tf_matrix)
+
+pheatmap::pheatmap(tf_matrix,
+         annotation_col = annot_row,
+         annotation_colors = annot_col,
+         cluster_rows = F,
+         cluster_cols = F,
+         show_rownames = T,
+         # cellheight = 10,
+         fontsize_row = 7,
+         color = colorRampPalette(c("blue", "white", "red"))(100),
+         main = "DoRothEA - TF activity") 
+```
+
+
