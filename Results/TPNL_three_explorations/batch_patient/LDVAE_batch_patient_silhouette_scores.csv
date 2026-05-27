@@ -1,4 +1,0 @@
-representation,variable,silhouette_score,n_labels
-X_LDVAE,region_long,-0.01608484610915184,2
-X_LDVAE,patient,0.03687059134244919,6
-X_LDVAE,batch_patient,0.03687059134244919,6
