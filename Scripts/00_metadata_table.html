@@ -363,6 +363,10 @@ códigos de análisis se pueden ver en <a href="https://github.com/bianshuhui/CR
 <pre class="r"><code>library(GEOquery)
 library(dplyr)
 
+conflicted::conflict_prefer(&quot;select&quot;, &quot;dplyr&quot;)
+conflicted::conflict_prefer(&quot;rename&quot;, &quot;dplyr&quot;)
+conflicted::conflict_prefer(&quot;filter&quot;, &quot;dplyr&quot;)
+
 data &lt;- getGEO(&quot;GSE97693&quot;)$GSE97693_series_matrix.txt.gz</code></pre>
 <div id="metadata" class="section level2">
 <h2>Metadata</h2>
@@ -395,7 +399,6 @@ metaData &lt;- meta %&gt;%
     )
   )
 
-saveRDS(metaData, &quot;../Datos/MetaData.rds&quot;)
 write.table(metaData, &quot;../Datos/MetaData.txt&quot;, sep = &quot;\t&quot;, row.names = F, quote = F)</code></pre>
 <pre class="r"><code>metaData &lt;- metaData %&gt;% 
   mutate(
@@ -403,15 +406,20 @@ write.table(metaData, &quot;../Datos/MetaData.txt&quot;, sep = &quot;\t&quot;, r
   ) %&gt;%
   select(-relation)
 
+popData &lt;- read.delim(&quot;../Datos/Metadata notes/population_data.txt&quot;) %&gt;%
+  rename(patient = Patient.ID)
+
 
 SRAtable &lt;- read.csv2(&quot;../Datos/Metadata notes/SraRunTable.csv&quot;, sep = &quot;,&quot;) %&gt;%
   select(Run, BioSample) %&gt;%
   rename(SRA = Run)
 
 metaSRA &lt;- metaData %&gt;%
-  merge(SRAtable, by = &quot;BioSample&quot;)
+  merge(SRAtable, by = &quot;BioSample&quot;) %&gt;%
+  merge(popData, by = &quot;patient&quot;)
 
-write.table(metaSRA, &quot;../Datos/metaSRA.txt&quot;)</code></pre>
+write.table(metaSRA, &quot;../Datos/metaSRA.txt&quot;)
+saveRDS(metaSRA, &quot;../Datos/MetaData.rds&quot;)</code></pre>
 </div>
 </div>
 

@@ -1,0 +1,3 @@
+representation,variable,silhouette_score,n_labels
+X_scVI,region_long,0.029490739107131958,2
+X_scVI,patient,0.015308097936213017,6

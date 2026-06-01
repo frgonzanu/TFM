@@ -92,7 +92,12 @@ print(pathways[p])
 # Metástasis de nodo linfático
 
 ```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-df_NL <- read.csv("../Results/candidates_NL_PT.csv")
+df_NL <- c(
+  readRDS("../Results/splsda_selected_genes_TPMNL.rds")$gene,
+  de %>%
+    filter(FDR_Metastasis.Nodo.Linfático < 0.05) %>%
+    pull(gene_name)
+  ) %>% unique()
 background_symbols <- unique(de$gene_name)
 ```
 
@@ -100,54 +105,25 @@ background_symbols <- unique(de$gene_name)
 
 ```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE, fig.height=7, fig.width=7}
 go_bp_NL <- enrichGO(
-  gene = df_NL$x,# %>% filter(pvalue_MetastasisNodoLinfático_vs_TumorPrimario < 0.05) %>% pull(gene_name),
+  gene = df_NL,
   OrgDb = org.Hs.eg.db,
   universe = background_symbols,
   keyType = "SYMBOL",
   ont = "BP",
-  pAdjustMethod = "BH"
-  # pvalueCutoff = 1,
-  # qvalueCutoff = 1
+  pAdjustMethod = "BH",
+  pvalueCutoff = 1,
+  qvalueCutoff = 1
 )
 clusterProfiler::dotplot(go_bp_NL, showCategory = 15) + ggtitle("GO Biological Process Enrichment")
 ```
 
-```{r , message=FALSE, include=FALSE, echo=FALSE, warning=FALSE}
-NL_GOBP <- ggplot(go_bp_NL@result %>% 
-                    slice_min(pvalue, n = 15) %>% 
-                    separate(GeneRatio, 
-                             into = c("num", "den"), 
-                             sep = "/", 
-                             convert = TRUE) %>%
-                    mutate(ratio_num = num / den) %>%
-                    arrange(ratio_num) %>%
-                    mutate(Description = factor(Description, levels = Description)),
-                  aes(x = ratio_num,
-                      y = Description,
-                      col = pvalue,
-                      size = Count)) + 
-  geom_point()  +
-  labs(x = "GeneRatio",
-       y = "GO Term",
-       col = "p-value",
-       size = "Count") +
-  theme_bw() +
-  ggtitle("GO Biological Process") +
-  scale_color_gradient(low = "steelblue", high = "red")
-
-# NL_alluvial <- ggplot(go_bp_NL@result %>%
-#                         slice_min(pvalue, n = 15) %>%
-#                         )
-
-
-```
 
 ## KEGG
 
 ```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE, fig.height=7, fig.width=7}
 # convertimes SYMBOL a ENTREZID
 entrez_list_NL <- bitr(
-  df_NL$x,# %>% filter(pvalue_MetastasisNodoLinfático_vs_TumorPrimario < 0.05) %>% pull(gene_name),
+  df_NL,# %>% filter(pvalue_MetastasisNodoLinfático_vs_TumorPrimario < 0.05) %>% pull(gene_name),
   fromType = "SYMBOL",
   toType = "ENTREZID",
   OrgDb = org.Hs.eg.db
@@ -167,8 +143,8 @@ kegg_res_NL <- enrichKEGG(
   universe = background_symbols_entrez,
   keyType = "kegg",
   pAdjustMethod = "BH",
-  pvalueCutoff = 0.1,
-  qvalueCutoff = 0.1
+  pvalueCutoff = 1,
+  qvalueCutoff = 1
 )
 clusterProfiler::dotplot(kegg_res_NL, showCategory = 15) + ggtitle("KEGG Pathways")
 ```
@@ -188,20 +164,23 @@ ReactomePA::dotplot(reactome_res_NL, showCategory = 15
                     ) + ggtitle("Reactome")
 ```
 
+# Tumor primario vs Colon Normal
 
 ```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-df_CN <- read.csv("../Results/candidates_TP_NC.csv")
+df_CN <- c(
+  readRDS("../Results/splsda_selected_genes_TPCN.rds")$gene,
+  de %>%
+    filter(FDR_Colon.Normal < 0.05) %>%
+    pull(gene_name)
+) %>% unique()
 ```
-
-# TP vs CN
 
 
 ## GO BP
 
 ```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE, fig.height=7, fig.width=7}
 go_bp_CN <- enrichGO(
-  gene = df_CN$x,# %>% filter(pvalue_MetastasisNodoLinfático_vs_TumorPrimario < 0.05) %>% pull(gene_name),
+  gene = df_CN,
   OrgDb = org.Hs.eg.db,
   keyType = "SYMBOL",
   ont = "BP",
@@ -218,7 +197,7 @@ clusterProfiler::dotplot(go_bp_CN, showCategory = 15) + ggtitle("GO Biological P
 ```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE, fig.height=7, fig.width=7}
 # convertimes SYMBOL a ENTREZID
 entrez_list_CN <- bitr(
-  df_CN$x,# %>% filter(pvalue_MetastasisNodoLinfático_vs_TumorPrimario < 0.05) %>% pull(gene_name),
+  df_CN,
   fromType = "SYMBOL",
   toType = "ENTREZID",
   OrgDb = org.Hs.eg.db
@@ -253,269 +232,6 @@ ReactomePA::dotplot(reactome_res_CN, showCategory = 15
 ```
 
 
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
 
 ```{r}
 sessionInfo()

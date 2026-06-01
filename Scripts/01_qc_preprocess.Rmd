@@ -27,6 +27,9 @@ library(scater)
 library(SingleCellExperiment)
 library(patchwork)
 library(harmony)
+
+conflicted::conflict_prefer("filter", "dplyr")
+conflicted::conflict_prefer("select", "dplyr")
 ```
 
 
@@ -37,15 +40,19 @@ matrix <- read.delim("../Datos/matrix/counts_matrix_unstranded.tsv")
 metaData <- readRDS("../Datos/MetaData.rds") %>%
   filter(SRA %in% colnames(matrix)[-1])
 
-gtf <- rtracklayer::import("../Datos/genes_ann.gtf.gz")
-
-gene_annot <- as.data.frame(gtf) %>%
-  filter(type == "gene") %>%
-  select(gene_id, gene_name, gene_type) %>%
-  distinct()
-write.csv(gene_annot, "../Datos/gene_annot.csv", row.names = F)
-
-rm(gtf)
+if(!file.exists("../Datos/gene_annot.csv")){
+  gtf <- rtracklayer::import("../Datos/genes_ann.gtf.gz")
+  
+  gene_annot <- as.data.frame(gtf) %>%
+    filter(type == "gene") %>%
+    select(gene_id, gene_name, gene_type) %>%
+    distinct()
+  write.csv(gene_annot, "../Datos/gene_annot.csv", row.names = F)
+  
+  rm(gtf)
+} else {
+  gene_annot <- read.csv("../Datos/gene_annot.csv")
+}
 ```
 
 Ahora unimos la matriz de conteo con los datos de anotación:
@@ -78,9 +85,7 @@ sce <- SingleCellExperiment(
 rownames(sce) <- rowData(sce)$gene_id
 ```
 
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
 
-```
 
 
 # QC de la matriz de conteo
@@ -225,6 +230,7 @@ hvg_genes <- scran::getTopHVGs(
                block = sce_qc$batch),
   n = 5000
 )
+saveRDS(hvg_genes, "../Datos/hvg_genes.rds")
 sce_qc <- sce_qc[rownames(sce_qc) %in% hvg_genes, ]
 ```
 

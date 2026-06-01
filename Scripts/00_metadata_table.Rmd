@@ -15,6 +15,10 @@ Los datos son provenientes del estudio con DOI 10.1126/science.aau6509 almacenad
 library(GEOquery)
 library(dplyr)
 
+conflicted::conflict_prefer("select", "dplyr")
+conflicted::conflict_prefer("rename", "dplyr")
+conflicted::conflict_prefer("filter", "dplyr")
+
 data <- getGEO("GSE97693")$GSE97693_series_matrix.txt.gz
 ```
 
@@ -50,7 +54,6 @@ metaData <- meta %>%
     )
   )
 
-saveRDS(metaData, "../Datos/MetaData.rds")
 write.table(metaData, "../Datos/MetaData.txt", sep = "\t", row.names = F, quote = F)
 
 ```
@@ -63,14 +66,19 @@ metaData <- metaData %>%
   ) %>%
   select(-relation)
 
+popData <- read.delim("../Datos/Metadata notes/population_data.txt") %>%
+  rename(patient = Patient.ID)
+
 
 SRAtable <- read.csv2("../Datos/Metadata notes/SraRunTable.csv", sep = ",") %>%
   select(Run, BioSample) %>%
   rename(SRA = Run)
 
 metaSRA <- metaData %>%
-  merge(SRAtable, by = "BioSample")
+  merge(SRAtable, by = "BioSample") %>%
+  merge(popData, by = "patient")
 
 write.table(metaSRA, "../Datos/metaSRA.txt")
+saveRDS(metaSRA, "../Datos/MetaData.rds")
 ```
 

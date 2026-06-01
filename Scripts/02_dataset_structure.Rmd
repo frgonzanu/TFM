@@ -149,7 +149,8 @@ ggcells(sce,
                       y = UMAP.2,
                       colour = region_long)) + 
   geom_point(alpha = 0.6) + 
-  facet_wrap(~patient) +
+  facet_wrap(~patient,
+             scales = "free") +
   labs(x = "UMAP 1",
        y = "UMAP 2",
        colour = "Región") + 
@@ -191,13 +192,12 @@ plotReducedDim(sce,
 Anotación con referencia personalizada:
 
 ```{r, message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-if(!file.exists("../Datos/pb_ref_full.rds")){
+if(!(file.exists("../Datos/pb_ref_full.rds") & file.exists("../Datos/pb_ref_mid.rds"))) {
 library(Matrix)
 
 # 1. expresión
   
 mat <- readMM("../Datos/CRC sc ref/matrix.mtx")
-dim(mat) # si es de 371223 genes, borrar punto 3
 
 genes <- read.delim("../Datos/CRC sc ref/matrix.genes.tsv", header = FALSE)
 barcodes <- read.delim("../Datos/CRC sc ref/matrix.barcodes.tsv", header = FALSE)
@@ -297,7 +297,8 @@ ggcells(sce[,!is.na(sce$annFull)],
   geom_point(alpha = 0.75,
              size = 1) + 
   stat_density2d() + 
-  facet_wrap(~region_long) + 
+  facet_wrap(~region_long,
+             scales = "free") + 
   labs(x = "UMAP 1",
        y = "UMAP 2",
        colour = "Anotación") +
@@ -347,15 +348,6 @@ ggplot(proporcs,
   ))
 ```
 
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE, fig.width=7, fig.height=6}
-chi_tab <- chisq.test(tabla_RL_ann)
-print(chi_tab$p.value)
-rcompanion::cramerV(tabla_RL_ann)
-pheatmap::pheatmap(chi_tab$residuals,
-                   cluster_rows = F,
-                   cluster_cols = F,
-                   scale = 'row')
-```
 
 ```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE, fig.width=10}
 ggplot(proporcs, 
@@ -365,7 +357,7 @@ ggplot(proporcs,
   geom_bar(stat = "identity", 
            position = "fill") +
   labs(title = "Proporción de tipos celulares por paciente",
-       x = "Localización",
+       x = "Paciente",
        y = "Proporción",
        fill = "Tipo celular") +
   scale_fill_manual (values = paletteer::paletteer_d("ggsci::category20c_d3")) +
@@ -375,8 +367,6 @@ ggplot(proporcs,
 
 
 ### Análisis composicional
-
-
 
 
 ```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE, fig.width=10}
@@ -441,110 +431,6 @@ plotReducedDim(sce,
 
 ```
 
-
-
-
-### Métodos supervisados
-
-Probamos métodos como PLSD-DA, que es una técnica de reducción de dimensionalidad supervisada que busca encontrar componentes que maximicen la separación entre clases predefinidas. En este caso, se podrían usar las regiones anatómicas como clases para evaluar si existen patrones de expresión génica específicos asociados a cada región.
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-library(mixOmics)
-
-splsda_res <- splsda(t(assay(sce,
-                             "harmony")),
-                   colData(sce)$region_long, 
-                     ncomp = 5,
-                     keepX = c(50, 50, 50, 50, 50))
-splsda_df <- data.frame(splsda_res$variates, colData(sce))
-ggplot(data = splsda_df,
-       aes(x = X.comp1,
-           y = X.comp2,
-           # shape = region_long,
-           color = region_long)) +
-  geom_point(alpha = 0.7) + 
-  stat_ellipse(level = 0.95,
-               show.legend = F) +
-  # scale_color_brewer(palette = "Dark2") +
-  labs(title = "sPLS-DA: Componentes 1 y 2",
-       x = "sPLS-DA Component 1",
-       y = "sPLS-DA Component 2") + 
-  theme_bw() +
-  guides(color = guide_legend(title = "Región"))
-```
-
-Se aprecia que el grupo "Metástasis post-tratamiento" se separa del resto de grupos en la dirección positiva de la primera componente discriminante, lo que sugiere que existen patrones de expresión génica específicos asociados a esta región anatómica. Sin embargo, este tipo de tejido pertenece únicamente al paciente CRC01, y los otros grupos no muestran una separación tan clara. Para evaluar mejor la separación entre los grupos de interés, nos quedamos únicamente con los grupos `Tumor Primario` y `Metástasis de Nodo Linfático`.
-
-```{r}
-splsda_res <- splsda(t(assay(sce[, !(colData(sce)$region_long %in% c("Metastasis post-tratamiento", "Metastasis Higado", "Colon Normal"))],
-                             "harmony")),
-                   colData(sce[, !(colData(sce)$region_long %in% c("Metastasis post-tratamiento", "Metastasis Higado", "Colon Normal"))])$region_long, 
-                     ncomp = 5,
-                     keepX = c(50, 50, 50, 50, 50))
-splsda_df <- data.frame(splsda_res$variates, colData(sce[, !(colData(sce)$region_long %in% c("Metastasis post-tratamiento", "Metastasis Higado", "Colon Normal"))]))
-
-centroides <- splsda_df %>% 
-  group_by(region_long) %>% 
-  summarise(comp1 = mean(X.comp1), 
-            comp2 = mean(X.comp2))
-
-
-ggplot(data = splsda_df,
-       aes(x = X.comp1,
-           y = X.comp2,
-           # shape = region_long,
-           color = region_long)) +
-  geom_point(alpha = 0.7) + 
-  stat_ellipse(level = 0.95,
-               show.legend = F) +
-  scale_color_brewer(palette = "Dark2") +
-  labs(title = "sPLS-DA: Componentes 1 y 2",
-       x = "sPLS-DA Component 1",
-       y = "sPLS-DA Component 2",
-       color = "Región") + 
-  geom_point(data = centroides, 
-             aes(x = comp1, y = comp2),
-             shape = 4, size = 4, col = "black", 
-             show.legend = F) +
-  theme_bw()
-
-vip_sPLSDA <- vip(splsda_res) %>% as.data.frame() %>% arrange(desc(comp1))
-
-(main_vip_genes <- data.frame(GENE_COMP1 = rownames(vip_sPLSDA %>% arrange(desc(comp1)) %>% head(50)),
-                             GENE_COMP2 = rownames(vip_sPLSDA %>% arrange(desc(comp2)) %>% head(50)))) %>%
-  gt::gt() %>%
-  gt::tab_header(title = "Top 50 genes VIP por componente") %>%
-  gt::cols_label(GENE_COMP1 = "Componente 1",
-                 GENE_COMP2 = "Componente 2") %>%
-  gt::tab_options(table.font.size = "small") 
-
-(genes_comp1_2 <- vip_sPLSDA[base::intersect(main_vip_genes$GENE_COMP1, main_vip_genes$GENE_COMP2),c("comp1", "comp2")]) %>%
-  ggplot(aes(x = comp1, y = comp2)) +
-  geom_point() +
-  geom_text_repel(aes(label = rownames(genes_comp1_2)),
-                  size = 3,
-                  max.overlaps = 10) +
-  labs(title = "Genes VIP en componentes 1 y 2",
-       x = "VIP Componente 1",
-       y = "VIP Componente 2") +
-  theme_minimal()
-
-genes_comp1_2 %>%
-  tibble::rownames_to_column(var = "genes") %>%
-  gt::gt() %>%
-  gt::tab_header(title = "Intersección de top 50 genes VIP en componentes 1 y 2") %>%
-  gt::cols_label(genes = "Genes",
-                 comp1 = "VIP Componente 1",
-                 comp2 = "VIP Componente 2") %>%
-  gt::tab_options(table.font.size = "small")
-
-
-
-openxlsx::write.xlsx(vip_sPLSDA,
-                     "../Results/VIP_sPLSDA.xlsx",
-                     rowNames = T)
-
-```
 
 ```{r}
 saveRDS(sce, "../Datos/sce_2.rds")
