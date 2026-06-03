@@ -215,9 +215,13 @@ sce_qc <- logNormCounts(sce_qc)
 
 ```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
 plotHighestExprs(sce_qc, 
-                 exprs_values = "counts")
+                 exprs_values = "counts") + 
+  theme(axis.text.x = element_text(size = 12),
+        axis.title = element_text(size = 14))
 plotHighestExprs(sce_qc, 
-                 exprs_values = "logcounts")
+                 exprs_values = "logcounts") +
+  theme(axis.text.x = element_text(size = 12),
+        axis.title = element_text(size = 14))
 ```
 
 # Filtrado por HVGs

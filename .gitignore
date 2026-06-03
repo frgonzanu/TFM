@@ -1,17 +1,19 @@
+# Archivos de R
 .Rproj.user
 .Rhistory
 .RData
 .Ruserdata
-Datos/
-<<<<<<< HEAD
-Reports/
-=======
-Reports/
->>>>>>> 522c7fbe40b12d0d60efcfde8e99b4d4bd3a02be
-"*.RData"
-"*.rda"
-"Datos/CRCx sc ref/"
-"*.RDataTmp"
+*.RData
+*.rda
+*.RDataTmp
 .RDataTmp
 .RDataTmp1
-"Results/TPNL_three_explorations/"
+
+# Carpetas de datos y reports
+Datos/
+Datos/CRCx\ sc\ ref/
+Reports/
+
+# Resultados
+Results/TPNL_three_explorations/
+Results/images/

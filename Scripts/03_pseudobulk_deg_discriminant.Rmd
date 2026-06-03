@@ -84,9 +84,7 @@ plotPCA(pb,
         shape_by = "region_long",
         colour_by = "patient") +
   theme_minimal() +
-  labs(title = "PCA de pseudo-bulk",
-       x = "PC1",
-       y = "PC2") +
+  labs(title = "PCA de pseudo-bulk") +
   guides(shape = guide_legend(title = "Región"),
          colour = guide_legend(title = "Paciente"))
 table(pb$patient, pb$region_long)
