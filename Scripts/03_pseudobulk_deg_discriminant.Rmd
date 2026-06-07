@@ -201,22 +201,6 @@ for(target in targets){
 
 ```
 
-```{r, message=FALSE, include=FALSE, echo=FALSE, warning=FALSE}
-# de_merged %>%
-#   filter(!is.na(logFC_Metastasis.Nodo.Linfático)) %>%
-#   filter(PValue_Metastasis.Nodo.Linfático < 0.05) %>%
-#   arrange(desc(logFC_Metastasis.Nodo.Linfático)) %>%
-#   pull(gene_name) %>%
-#   write.csv("../Results/candidates_NL_PT.csv", row.names = F, col.names = F)
-# 
-# de_merged %>%
-#   filter(!is.na(logFC_Colon.Normal)) %>%
-#   filter(PValue_Colon.Normal < 0.05) %>%
-#   arrange(desc(logFC_Colon.Normal)) %>%
-#   pull(gene_name) %>%
-#   write.csv("../Results/candidates_TP_NC.csv", row.names = F, col.names = F)
-```
-
 
 # Análisis discriminante supervisado: sPLS-DA
 
