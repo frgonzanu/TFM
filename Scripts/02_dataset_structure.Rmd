@@ -56,25 +56,19 @@ vars <- getVarianceExplained(sce,
                                            "Gender", "Age",
                                            "AJCC.Stage", "Primary.Site"),
                              assay.type = "harmony")
-plotExplanatoryVariables(vars)
+plotExplanatoryVariables(vars %>% as.data.frame %>%
+                           dplyr::rename(
+                             Paciente = patient,
+                             Región = region_long,
+                             Localización = Primary.Site,
+                             Sexo = Gender,
+                             Edad = Age,
+                             Estadio = AJCC.Stage,
+                             Batch = batch
+                           )) +
+  labs(x = "% varianza explicada",
+       y = "Densidad")
 ```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
-```{r , message=FALSE, include=TRUE, echo=TRUE, warning=FALSE}
-
-```
-
 
 
 ## PCA
